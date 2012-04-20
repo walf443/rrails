@@ -1,6 +1,8 @@
 require 'socket'
 require 'rrails'
 require 'logger'
+require 'rake'
+require 'stringio'
 
 module RemoteRails
   class Server
@@ -14,23 +16,58 @@ module RemoteRails
     end
 
     def boot_rails
+      @logger.info("prepare rails environment")
       ENV["RAILS_ENV"] = @rails_env
       require File.expand_path('./config/boot')
       require @app_path
       Rails.application.require_environment!
+      @logger.info("finished preparing rails environment")
     end
 
     def start
       self.boot_rails
       server = TCPServer.open(@host, @port)
       @logger.info("starting rrails server on #{@host}:#{@port}")
+      Thread.abort_on_exception = true
       loop do
         Thread.start(server.accept) do |s|
           while line = s.gets
-            s.write($_)
+            @logger.info("invoke: #{line}")
+            self.dispatch(line)
           end
         end
       end
+    end
+
+    def dispatch(line)
+      args = line.split(/\s+/)
+      subcmd = args.shift
+      self.__send__("on_#{subcmd}", args)
+    end
+
+    def on_rails(args)
+      ActiveRecord::Base.remove_connection if defined?(ActiveRecord::Base)
+      pid = fork do
+        ActiveRecord::Base.establish_connection if defined?(ActiveRecord::Base)
+        ARGV.clear
+        ARGV.concat(args)
+        require 'rails/commands'
+      end
+      Process.waitpid(pid)
+    end
+
+    def on_rake(args)
+      ActiveRecord::Base.remove_connection if defined?(ActiveRecord::Base)
+      pid = fork do
+        ActiveRecord::Base.establish_connection if defined?(ActiveRecord::Base)
+        ::Rake.application = ::Rake::Application.new
+        ::Rake.application.init
+        ::Rake.application.load_rakefile
+        ::Rake.application[:environment].invoke
+        name = args.shift
+        ::Rake.application[name].invoke
+      end
+      Process.waitpid(pid)
     end
   end
 end
