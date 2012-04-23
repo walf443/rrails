@@ -33,7 +33,10 @@ module RemoteRails
         Thread.start(server.accept) do |s|
           while line = s.gets
             @logger.info("invoke: #{line}")
+            start = Time.now
             self.dispatch(line)
+            finish = Time.now
+            s.puts("finished\t#{ finish - start }")
           end
         end
       end
