@@ -1,8 +1,6 @@
 #!/usr/bin/env ruby
 
-
-ENV["RAILS_ENV"] ||= ARGV.shift
 $:.unshift File.expand_path('../../lib', __FILE__)
 require 'rrails'
 require 'rrails/client'
-RemoteRails::Client.new.start
+RemoteRails::Client.new_with_options(ARGV).run
