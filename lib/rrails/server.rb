@@ -4,6 +4,9 @@ require 'logger'
 require 'rake'
 require 'stringio'
 
+# FIXME: rails command require APP_PATH constants.
+APP_PATH = File.expand_path('./config/application')
+
 module RemoteRails
   class Server
     def initialize(options={})
@@ -34,43 +37,53 @@ module RemoteRails
           while line = s.gets
             @logger.info("invoke: #{line}")
             start = Time.now
-            self.dispatch(line)
+            self.dispatch(s, line)
             finish = Time.now
             s.puts("finished\t#{ finish - start }")
+            @logger.info("finished: #{line}")
           end
         end
       end
     end
 
-    def dispatch(line)
+    def dispatch(sock, line)
       args = line.split(/\s+/)
       subcmd = args.shift
-      self.__send__("on_#{subcmd}", args)
+      ActiveRecord::Base.remove_connection if defined?(ActiveRecord::Base)
+      servsock, clisock = UNIXSocket.pair
+      pid = fork do
+        clisock.close
+        ActiveRecord::Base.establish_connection if defined?(ActiveRecord::Base)
+        STDOUT.reopen(servsock)
+        STDERR.reopen(servsock)
+        self.__send__("on_#{subcmd}", args)
+      end
+      servsock.close
+      loop do
+        if Process.waitpid(pid, Process::WNOHANG)
+          return
+        end
+        if IO.select([clisock], [], [], 0.1)
+          while line = clisock.gets
+            sock.puts(line)
+          end
+        end
+      end
     end
 
     def on_rails(args)
-      ActiveRecord::Base.remove_connection if defined?(ActiveRecord::Base)
-      pid = fork do
-        ActiveRecord::Base.establish_connection if defined?(ActiveRecord::Base)
-        ARGV.clear
-        ARGV.concat(args)
-        require 'rails/commands'
-      end
-      Process.waitpid(pid)
+      ARGV.clear
+      ARGV.concat(args)
+      require 'rails/commands'
     end
 
     def on_rake(args)
-      ActiveRecord::Base.remove_connection if defined?(ActiveRecord::Base)
-      pid = fork do
-        ActiveRecord::Base.establish_connection if defined?(ActiveRecord::Base)
-        ::Rake.application = ::Rake::Application.new
-        ::Rake.application.init
-        ::Rake.application.load_rakefile
-        ::Rake.application[:environment].invoke
-        name = args.shift
-        ::Rake.application[name].invoke
-      end
-      Process.waitpid(pid)
+      ::Rake.application = ::Rake::Application.new
+      ::Rake.application.init
+      ::Rake.application.load_rakefile
+      ::Rake.application[:environment].invoke
+      name = args.shift
+      ::Rake.application[name].invoke
     end
   end
 end
