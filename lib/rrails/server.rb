@@ -50,22 +50,30 @@ module RemoteRails
       args = line.split(/\s+/)
       subcmd = args.shift
       ActiveRecord::Base.remove_connection if defined?(ActiveRecord::Base)
-      servsock, clisock = UNIXSocket.pair
+      servsock_out, clisock_out = UNIXSocket.pair
+      servsock_err, clisock_err = UNIXSocket.pair
       pid = fork do
-        clisock.close
+        clisock_out.close
+        clisock_err.close
         ActiveRecord::Base.establish_connection if defined?(ActiveRecord::Base)
-        STDOUT.reopen(servsock)
-        STDERR.reopen(servsock)
+        STDOUT.reopen(servsock_out)
+        STDERR.reopen(servsock_err)
         self.__send__("on_#{subcmd}", args)
       end
-      servsock.close
+      servsock_out.close
+      servsock_err.close
       loop do
         if Process.waitpid(pid, Process::WNOHANG)
           return
         end
-        if IO.select([clisock], [], [], 0.1)
-          while line = clisock.gets
-            sock.puts(line)
+        if IO.select([clisock_out], [], [], 0.1)
+          while line = clisock_out.gets
+            sock.puts("OUT\t#{line}")
+          end
+        end
+        if IO.select([clisock_err], [], [], 0.1)
+          while line = clisock_err.gets
+            sock.puts("ERROR\t#{line}")
           end
         end
       end
