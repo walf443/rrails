@@ -35,6 +35,7 @@ module RemoteRails
       loop do
         Thread.start(server.accept) do |s|
           while line = s.gets
+            line.chomp!
             @logger.info("invoke: #{line}")
             start = Time.now
             self.dispatch(s, line)
