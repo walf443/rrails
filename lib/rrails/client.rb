@@ -1,9 +1,10 @@
 require 'socket'
 require 'rrails'
+require 'shellwords'
 module RemoteRails
   class Client
     def self.new_with_options(argv)
-      cmd = argv.join(" ")
+      cmd = Shellwords.join(argv)
       self.new({ :cmd => cmd })
     end
 

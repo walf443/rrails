@@ -3,6 +3,7 @@ require 'rrails'
 require 'logger'
 require 'rake'
 require 'stringio'
+require 'shellwords'
 
 # FIXME: rails command require APP_PATH constants.
 APP_PATH = File.expand_path('./config/application')
@@ -52,7 +53,7 @@ module RemoteRails
     end
 
     def dispatch(sock, line)
-      args = line.split(/\s+/)
+      args = Shellwords.shellsplit(line)
       subcmd = args.shift
       ActiveRecord::Base.remove_connection if defined?(ActiveRecord::Base)
       servsock_out, clisock_out = UNIXSocket.pair
