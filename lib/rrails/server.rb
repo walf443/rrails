@@ -34,14 +34,18 @@ module RemoteRails
       Thread.abort_on_exception = true
       loop do
         Thread.start(server.accept) do |s|
-          while line = s.gets
-            line.chomp!
-            @logger.info("invoke: #{line}")
-            start = Time.now
-            self.dispatch(s, line)
-            finish = Time.now
-            s.puts("finished\t#{ finish - start }")
-            @logger.info("finished: #{line}")
+          begin
+            while line = s.gets
+              line.chomp!
+              @logger.info("invoke: #{line}")
+              start = Time.now
+              self.dispatch(s, line)
+              finish = Time.now
+              s.puts("finished\t#{ finish - start }")
+              @logger.info("finished: #{line}")
+            end
+          rescue Errno::EPIPE => e
+            @logger.error("client disconnect: " + e.message)
           end
         end
       end
