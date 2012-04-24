@@ -3,7 +3,8 @@ require 'rrails'
 module RemoteRails
   class Client
     def self.new_with_options(argv)
-      self.new({ :cmd => argv })
+      cmd = argv.join(" ")
+      self.new({ :cmd => cmd })
     end
 
     def initialize(options={})
