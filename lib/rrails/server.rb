@@ -28,8 +28,16 @@ module RemoteRails
       @logger.info("finished preparing rails environment")
     end
 
+    def boot_rake
+      ::Rake.application = ::Rake::Application.new
+      ::Rake.application.init
+      ::Rake.application.load_rakefile
+      ::Rake.application[:environment].invoke
+    end
+
     def start
       self.boot_rails
+      self.boot_rake
       server = TCPServer.open(@host, @port)
       @logger.info("starting rrails server on #{@host}:#{@port}")
       Thread.abort_on_exception = true
@@ -74,11 +82,14 @@ module RemoteRails
         end
         if IO.select([clisock_out], [], [], 0.1)
           while line = clisock_out.gets
+            line.chomp!
             sock.puts("OUT\t#{line}")
           end
         end
         if IO.select([clisock_err], [], [], 0.1)
           while line = clisock_err.gets
+            line.chomp!
+            @logger.error(line)
             sock.puts("ERROR\t#{line}")
           end
         end
@@ -92,12 +103,9 @@ module RemoteRails
     end
 
     def on_rake(args)
-      ::Rake.application = ::Rake::Application.new
-      ::Rake.application.init
-      ::Rake.application.load_rakefile
-      ::Rake.application[:environment].invoke
-      name = args.shift
-      ::Rake.application[name].invoke
+      ARGV.clear
+      ARGV.concat(args)
+      ::Rake.application.run
     end
   end
 end
