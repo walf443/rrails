@@ -28,16 +28,8 @@ module RemoteRails
       @logger.info("finished preparing rails environment")
     end
 
-    def boot_rake
-      ::Rake.application = ::Rake::Application.new
-      ::Rake.application.init
-      ::Rake.application.load_rakefile
-      ::Rake.application[:environment].invoke
-    end
-
     def start
       self.boot_rails
-      self.boot_rake
       server = TCPServer.open(@host, @port)
       @logger.info("starting rrails server on #{@host}:#{@port}")
       Thread.abort_on_exception = true
