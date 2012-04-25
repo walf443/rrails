@@ -19,7 +19,7 @@ module RemoteRails
       sock = TCPSocket.open(@host, @port)
       sock.puts(@cmd)
       while line = sock.gets
-        if line =~ /^finished\t/
+        if line =~ /^FINISHED\t/
           return
         elsif line =~ /^OUT\t(.+)$/
           $stdout.puts($1)

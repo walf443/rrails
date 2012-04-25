@@ -50,7 +50,7 @@ module RemoteRails
               start = Time.now
               self.dispatch(s, line)
               finish = Time.now
-              s.puts("finished\t#{ finish - start }")
+              s.puts("FINISHED\t#{ finish - start }")
               @logger.info("finished: #{line}")
             end
           rescue Errno::EPIPE => e
