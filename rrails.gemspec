@@ -9,8 +9,8 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Keiji, Yoshimi"]
-  s.date = "2012-04-25"
-  s.description = "TODO: longer description of your gem"
+  s.date = "2012-04-26"
+  s.description = "remote run rails/rake command"
   s.email = "walf443@gmail.com"
   s.executables = ["rrails", "rrails-server"]
   s.extra_rdoc_files = [
@@ -30,6 +30,7 @@ Gem::Specification.new do |s|
     "lib/rrails.rb",
     "lib/rrails/client.rb",
     "lib/rrails/server.rb",
+    "rrails.gemspec",
     "test/helper.rb",
     "test/test_rrails.rb"
   ]
@@ -37,7 +38,7 @@ Gem::Specification.new do |s|
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
   s.rubygems_version = "1.8.21"
-  s.summary = "TODO: one-line summary of your gem"
+  s.summary = "remote run rails/rake command"
 
   if s.respond_to? :specification_version then
     s.specification_version = 3
