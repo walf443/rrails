@@ -1,11 +1,19 @@
 require 'socket'
 require 'rrails'
 require 'shellwords'
+require 'optparse'
 module RemoteRails
   class Client
     def self.new_with_options(argv)
+      options = {}
+      opts = OptionParser.new
+      opts.on('-E', '--rails_env=s') {|v| options[:rails_env] = v }
+      opts.on('-p', '--port=i')      {|v| options[:port] = v }
+      opts.parse!(argv)
+
       cmd = Shellwords.join(argv)
-      self.new({ :cmd => cmd })
+      options[:cmd] = cmd == "" ? nil : cmd
+      self.new(options)
     end
 
     def initialize(options={})
