@@ -17,8 +17,8 @@ Jeweler::Tasks.new do |gem|
   gem.name = "rrails"
   gem.homepage = "http://github.com/walf443/rrails"
   gem.license = "MIT"
-  gem.summary = %Q{TODO: one-line summary of your gem}
-  gem.description = %Q{TODO: longer description of your gem}
+  gem.summary = %Q{remote run rails/rake command}
+  gem.description = %Q{remote run rails/rake command}
   gem.email = "walf443@gmail.com"
   gem.authors = ["Keiji, Yoshimi"]
   # dependencies defined in Gemfile
