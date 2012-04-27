@@ -32,6 +32,19 @@ module RemoteRails
       self.boot_rails
       server = TCPServer.open(@host, @port)
       @logger.info("starting rrails server on #{@host}:#{@port}")
+      trap(:INT) do
+        @logger.info("SIGINT recieved. shutdown...")
+        exit
+      end
+      trap(:TERM) do
+        @logger.info("SIGTERM recieved. shutdown...")
+        exit
+      end
+      trap(:HUP) do
+        @logger.info("SIGHUP recieved. reload...")
+        ActionDispatch::Callbacks.new(Proc.new {}).call({})
+        self.boot_rails
+      end
       Thread.abort_on_exception = true
       loop do
         Thread.start(server.accept) do |s|
