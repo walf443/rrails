@@ -18,7 +18,7 @@ So, rrails can run rails/rake commands by preloaded daemon.
 
 == SEE ALSO
 
-* guard-rraisl: https://github.com/walf443/rrails
+* guard-rrails: https://github.com/walf443/guard-rrails
 * rails-sh: https://github.com/jugyo/rails-sh
 
 == Contributing to rrails
