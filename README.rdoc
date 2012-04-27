@@ -1,6 +1,25 @@
 = rrails
 
-Description goes here.
+remote run rails/rake command.
+
+== Usage
+
+$ cd ~/rails_project
+$ bundle exec rrails-server
+
+$ rrails -- rails generate model Yakiniku
+
+$ rrails -E test -- rake db:migrate
+
+== Description
+
+rails command is too slow. and rake command is too slow under rails environment.
+So, rrails can run rails/rake commands by preloaded daemon.
+
+== SEE ALSO
+
+guard-rraisl: https://github.com/walf443/rrails
+rails-sh: https://github.com/jugyo/rails-sh
 
 == Contributing to rrails
  
