@@ -3,6 +3,16 @@ require 'rrails'
 require 'shellwords'
 require 'optparse'
 module RemoteRails
+  #
+  # client for RemoteRails::Server.
+  #
+  # @example
+  #   client = RemoteRails::Client.new({
+  #     :cmd => "rails generate model Sushi",
+  #     :rails_env => "development",
+  #   })
+  #   client.run
+  #
   class Client
     def self.new_with_options(argv)
       options = {}

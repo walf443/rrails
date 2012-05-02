@@ -15,7 +15,7 @@ require 'jeweler'
 Jeweler::Tasks.new do |gem|
   # gem is a Gem::Specification... see http://docs.rubygems.org/read/chapter/20 for more options
   gem.name = "rrails"
-  gem.homepage = "http://github.com/walf443/rrails"
+  gem.homepage = "http://rubydoc.info/gems/rrails/frames"
   gem.license = "MIT"
   gem.summary = %Q{remote run rails/rake command}
   gem.description = %Q{remote run rails/rake command}

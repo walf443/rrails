@@ -4,11 +4,12 @@ remote run rails/rake command.
 
 == Usage
 
+    # run server
     $ cd ~/rails_project
     $ bundle exec rrails-server
     
+    # on another console.
     $ rrails -- rails generate model Yakiniku
-    
     $ rrails -E test -- rake db:migrate
 
 == Description

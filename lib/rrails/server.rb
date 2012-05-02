@@ -9,6 +9,12 @@ require 'shellwords'
 APP_PATH = File.expand_path('./config/application')
 
 module RemoteRails
+  # server to run rails/rake command.
+  #
+  #   @example
+  #     server = RemoteRails::Server.new(:rails_env => "development")
+  #     server.start
+  #
   class Server
     def initialize(options={})
       @rails_env = options[:rails_env] || "development"
@@ -17,15 +23,6 @@ module RemoteRails
       @host = 'localhost'
       @port = options[:poot] || DEFAULT_PORT[@rails_env]
       @logger = Logger.new(options[:logfile] ? options[:logfile] : $stderr)
-    end
-
-    def boot_rails
-      @logger.info("prepare rails environment")
-      ENV["RAILS_ENV"] = @rails_env
-      require File.expand_path('./config/boot')
-      require @app_path
-      Rails.application.require_environment!
-      @logger.info("finished preparing rails environment")
     end
 
     def start
@@ -63,6 +60,15 @@ module RemoteRails
           end
         end
       end
+    end
+
+    def boot_rails
+      @logger.info("prepare rails environment")
+      ENV["RAILS_ENV"] = @rails_env
+      require File.expand_path('./config/boot')
+      require @app_path
+      Rails.application.require_environment!
+      @logger.info("finished preparing rails environment")
     end
 
     def dispatch(sock, line)
