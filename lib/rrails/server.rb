@@ -68,13 +68,16 @@ module RemoteRails
       require File.expand_path('./config/boot')
       require @app_path
       Rails.application.require_environment!
+      unless Rails.application.config.cache_classes
+        ActionDispatch::Reloader.cleanup!
+        ActionDispatch::Reloader.prepare!
+      end
       @logger.info("finished preparing rails environment")
     end
 
     def dispatch(sock, line)
       args = Shellwords.shellsplit(line)
       subcmd = args.shift
-      ActiveRecord::Base.remove_connection if defined?(ActiveRecord::Base)
       servsock_out, clisock_out = UNIXSocket.pair
       servsock_err, clisock_err = UNIXSocket.pair
       pid = fork do
