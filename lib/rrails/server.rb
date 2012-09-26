@@ -68,6 +68,10 @@ module RemoteRails
       require File.expand_path('./config/boot')
       require @app_path
       Rails.application.require_environment!
+      unless Rails.application.config.cache_classes
+        ActionDispatch::Reloader.cleanup!
+        ActionDispatch::Reloader.prepare!
+      end
       @logger.info("finished preparing rails environment")
     end
 
