@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = "rrails"
-  s.version = "0.2.0"
+  s.version = "0.1.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Keiji, Yoshimi"]
-  s.date = "2012-05-01"
+  s.date = "2012-09-28"
   s.description = "remote run rails/rake command"
   s.email = "walf443@gmail.com"
   s.executables = ["rrails", "rrails-server"]
@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
   ]
   s.files = [
     ".document",
+    "Changes.md",
     "Gemfile",
     "Gemfile.lock",
     "LICENSE.txt",
@@ -34,10 +35,10 @@ Gem::Specification.new do |s|
     "test/helper.rb",
     "test/test_rrails.rb"
   ]
-  s.homepage = "http://github.com/walf443/rrails"
+  s.homepage = "http://rubydoc.info/gems/rrails/frames"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
-  s.rubygems_version = "1.8.21"
+  s.rubygems_version = "1.8.23"
   s.summary = "remote run rails/rake command"
 
   if s.respond_to? :specification_version then
