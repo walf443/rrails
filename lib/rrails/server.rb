@@ -90,21 +90,21 @@ module RemoteRails
       end
       servsock_out.close
       servsock_err.close
+      buffers = {out: '', err: ''}
+      clisocks = {out: clisock_out, err: clisock_err}
       loop do
         if Process.waitpid(pid, Process::WNOHANG)
           return
         end
-        if IO.select([clisock_out], [], [], 0.1)
-          while line = clisock_out.gets
-            line.chomp!
-            sock.puts("OUT\t#{line}")
-          end
-        end
-        if IO.select([clisock_err], [], [], 0.1)
-          while line = clisock_err.gets
-            line.chomp!
-            @logger.error(line)
-            sock.puts("ERROR\t#{line}")
+        [:out, :err].each do |channel|
+          begin
+            buffers[channel] << clisocks[channel].read_nonblock(1024)
+            while buffers[channel][/[\n\r]/]
+              line, buffers[channel] = buffers[channel].split(/[\n\r]/, 2)
+              sock.puts("#{channel.upcase}\t#{line}")
+            end
+          rescue Errno::EAGAIN => ex
+            sleep 0.1
           end
         end
       end
