@@ -7,6 +7,7 @@ require 'shellwords'
 
 # FIXME: rails command require APP_PATH constants.
 APP_PATH = File.expand_path('./config/application')
+PAGE_SIZE = 4096
 
 module RemoteRails
   # server to run rails/rake command.
@@ -78,8 +79,6 @@ module RemoteRails
     end
 
     def dispatch(sock, line)
-      args = Shellwords.shellsplit(line)
-      subcmd = args.shift
       servsock_out, clisock_out = UNIXSocket.pair
       servsock_err, clisock_err = UNIXSocket.pair
       pid = fork do
@@ -88,7 +87,7 @@ module RemoteRails
         ActiveRecord::Base.establish_connection if defined?(ActiveRecord::Base)
         STDOUT.reopen(servsock_out)
         STDERR.reopen(servsock_err)
-        self.__send__("on_#{subcmd}", args)
+        execute *Shellwords.shellsplit(line)
       end
       yield pid
       servsock_out.close
@@ -101,7 +100,7 @@ module RemoteRails
         end
         [:out, :error].each do |channel|
           begin
-            buffers[channel] << clisocks[channel].read_nonblock(4096)
+            buffers[channel] << clisocks[channel].read_nonblock(PAGE_SIZE)
             while buffers[channel][/[\n\r]/]
               line, buffers[channel] = buffers[channel].split(/[\n\r]/, 2)
               sock.puts("#{channel.upcase}\t#{line}")
@@ -113,16 +112,19 @@ module RemoteRails
       end
     end
 
-    def on_rails(args)
+    def execute(cmd, *args)
       ARGV.clear
       ARGV.concat(args)
-      require 'rails/commands'
+      case cmd
+      when 'rails'
+        require 'rails/commands'
+      when 'rake'
+        ::Rake.application.run
+      else
+        @logger.warn "#{cmd} not supported"
+        raise RuntimeError.new("#{cmd} is not supported in rrails.")
+      end
     end
 
-    def on_rake(args)
-      ARGV.clear
-      ARGV.concat(args)
-      ::Rake.application.run
-    end
   end
 end
