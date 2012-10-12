@@ -106,7 +106,7 @@ module RemoteRails
               line, buffers[channel] = buffers[channel].split(/[\n\r]/, 2)
               sock.puts("#{channel.upcase}\t#{line}")
             end
-          rescue Errno::EAGAIN => ex
+          rescue Errno::EAGAIN, EOFError => ex
             sleep 0.1
           end
         end
