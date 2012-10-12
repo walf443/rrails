@@ -93,15 +93,15 @@ module RemoteRails
       yield pid
       servsock_out.close
       servsock_err.close
-      buffers = {out: '', err: ''}
-      clisocks = {out: clisock_out, err: clisock_err}
+      buffers = {out: '', error: ''}
+      clisocks = {out: clisock_out, error: clisock_err}
       loop do
         if Process.waitpid(pid, Process::WNOHANG)
           return
         end
-        [:out, :err].each do |channel|
+        [:out, :error].each do |channel|
           begin
-            buffers[channel] << clisocks[channel].read_nonblock(1024)
+            buffers[channel] << clisocks[channel].read_nonblock(4096)
             while buffers[channel][/[\n\r]/]
               line, buffers[channel] = buffers[channel].split(/[\n\r]/, 2)
               sock.puts("#{channel.upcase}\t#{line}")
