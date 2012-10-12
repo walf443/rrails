@@ -45,17 +45,19 @@ module RemoteRails
       Thread.abort_on_exception = true
       loop do
         Thread.start(server.accept) do |s|
+          childpids = []
           begin
             while line = s.gets
               line.chomp!
               @logger.info("invoke: #{line}")
               start = Time.now
-              self.dispatch(s, line)
+              self.dispatch(s, line) { |pid| childpids << pid }
               finish = Time.now
               s.puts("FINISHED\t#{ finish - start }")
               @logger.info("finished: #{line}")
             end
           rescue Errno::EPIPE => e
+            Process.kill 'TERM', *childpids unless childpids.empty?
             @logger.error("client disconnect: " + e.message)
           end
         end
@@ -88,6 +90,7 @@ module RemoteRails
         STDERR.reopen(servsock_err)
         self.__send__("on_#{subcmd}", args)
       end
+      yield pid
       servsock_out.close
       servsock_err.close
       buffers = {out: '', err: ''}
