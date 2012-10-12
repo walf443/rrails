@@ -4,6 +4,9 @@ require 'logger'
 require 'rake'
 require 'stringio'
 require 'shellwords'
+require 'pty'
+require 'irb'
+require 'pry'
 
 # FIXME: rails command require APP_PATH constants.
 APP_PATH = File.expand_path('./config/application')
@@ -43,32 +46,33 @@ module RemoteRails
         ActionDispatch::Callbacks.new(Proc.new {}).call({})
         self.boot_rails
       end
+
       Thread.abort_on_exception = true
       loop do
         Thread.start(server.accept) do |s|
           childpids = []
           begin
-            while line = s.gets
-              line.chomp!
-              @logger.info("invoke: #{line}")
-              start = Time.now
-              self.dispatch(s, line) { |pid| childpids << pid }
-              finish = Time.now
-              s.puts("FINISHED\t#{ finish - start }")
-              @logger.info("finished: #{line}")
-            end
+            line = s.gets.chomp
+            @logger.info("invoke: #{line}")
+            start = Time.now
+            self.dispatch(s, line) { |pid| childpids << pid }
+            finish = Time.now
+            s.puts("FINISHED\t#{ finish - start }")
+            @logger.info("finished: #{line} (in #{finish - start} seconds)")
           rescue Errno::EPIPE => e
-            Process.kill 'TERM', *childpids unless childpids.empty?
             @logger.error("client disconnect: " + e.message)
+            Process.kill 'TERM', *childpids unless childpids.empty?
           end
         end
       end
     end
 
     def boot_rails
-      @logger.info("prepare rails environment")
+      @logger.info("prepare rails environment (#{@rails_env})")
       ENV["RAILS_ENV"] = @rails_env
+      require File.expand_path('./config/application')
       require File.expand_path('./config/boot')
+      require File.expand_path('./config/environment')
       require @app_path
       Rails.application.require_environment!
       unless Rails.application.config.cache_classes
@@ -79,37 +83,54 @@ module RemoteRails
     end
 
     def dispatch(sock, line)
-      servsock_out, clisock_out = UNIXSocket.pair
-      servsock_err, clisock_err = UNIXSocket.pair
+      m_out, s_out = PTY.open
+      m_err, s_err = PTY.open
+
+      # servsock_out, clisock_out = UNIXSocket.pair
+      # servsock_err, clisock_err = UNIXSocket.pair
+
+      running = true
       pid = fork do
-        clisock_out.close
-        clisock_err.close
+        # [m_out, m_err].each(&:close)
         ActiveRecord::Base.establish_connection if defined?(ActiveRecord::Base)
-        STDOUT.reopen(servsock_out)
-        STDERR.reopen(servsock_err)
+        STDIN.reopen(s_out)
+        STDOUT.reopen(s_out)
+        STDERR.reopen(s_err)
         execute *Shellwords.shellsplit(line)
       end
+
       yield pid
-      servsock_out.close
-      servsock_err.close
-      buffers = {out: '', error: ''}
-      clisocks = {out: clisock_out, error: clisock_err}
-      loop do
-        if Process.waitpid(pid, Process::WNOHANG)
-          return
-        end
-        [:out, :error].each do |channel|
+
+      # input thread
+      thread = Thread.start do
+        while running do
           begin
-            buffers[channel] << clisocks[channel].read_nonblock(PAGE_SIZE)
-            while buffers[channel][/[\n\r]/]
-              line, buffers[channel] = buffers[channel].split(/[\n\r]/, 2)
-              sock.puts("#{channel.upcase}\t#{line}")
-            end
+            input = sock.getc
+            m_out.write(input)
+          rescue
+            running = false
+          end
+        end
+      end
+
+      clisocks = {out: m_out, err: m_err}
+      loop do
+        return $? if Process.waitpid(pid, Process::WNOHANG)
+        [:out, :err].each do |channel|
+          begin
+            response = clisocks[channel].read_nonblock(PAGE_SIZE)
+            sock.puts("#{channel.upcase}\t#{response.bytes.to_a.join(',')}")
+            sock.flush
           rescue Errno::EAGAIN, EOFError => ex
             sleep 0.1
           end
         end
       end
+    ensure
+      running = false
+      [m_out, m_err].each {|io| io.close unless io.closed?}
+      Process.kill 'TERM', pid rescue nil
+      thread.join if thread
     end
 
     def execute(cmd, *args)

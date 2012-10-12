@@ -2,6 +2,8 @@ require 'socket'
 require 'rrails'
 require 'shellwords'
 require 'optparse'
+require 'io/console'
+
 module RemoteRails
   #
   # client for RemoteRails::Server.
@@ -36,16 +38,34 @@ module RemoteRails
     def run
       sock = TCPSocket.open(@host, @port)
       sock.puts(@cmd)
-      while line = sock.gets
-        if line =~ /^FINISHED\t(.+)/
-          $stdout.puts("\nfinished (#{$1}sec)")
-          return
-        elsif line =~ /^OUT\t(.+)$/
-          $stdout.puts($1)
-        elsif line =~ /^ERROR\t(.+)$/
-          $stderr.puts($1)
+      running = true
+
+      begin
+        # input thread
+        thread = Thread.start do
+          while running do
+            input = STDIN.getch
+            sock.write(input)
+          end
         end
+
+        while running && line = sock.gets.chomp
+          case line
+          when /^FINISHED\t(.+)$/
+            # kill the input thread immediately
+            exit 0
+          when /^OUT\t(.+)$/
+            STDOUT.write($1.split(',').map(&:to_i).pack('c*'))
+          when /^ERR\t(.+)$/
+            STDERR.write($1.split(',').map(&:to_i).pack('c*'))
+          end
+        end
+      rescue EOFError
+        running = false
+      ensure
+        running = false
       end
     end
+
   end
 end
