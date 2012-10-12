@@ -21,7 +21,7 @@ module RemoteRails
       @app_path = File.expand_path('./config/application')
       # should not access to outside
       @host = 'localhost'
-      @port = options[:poot] || DEFAULT_PORT[@rails_env]
+      @port = options[:port] || DEFAULT_PORT[@rails_env]
       @logger = Logger.new(options[:logfile] ? options[:logfile] : $stderr)
     end
 
