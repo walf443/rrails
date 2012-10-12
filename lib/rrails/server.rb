@@ -7,6 +7,7 @@ require 'shellwords'
 
 # FIXME: rails command require APP_PATH constants.
 APP_PATH = File.expand_path('./config/application')
+PAGE_SIZE = 4096
 
 module RemoteRails
   # server to run rails/rake command.
@@ -21,7 +22,7 @@ module RemoteRails
       @app_path = File.expand_path('./config/application')
       # should not access to outside
       @host = 'localhost'
-      @port = options[:poot] || DEFAULT_PORT[@rails_env]
+      @port = options[:port] || DEFAULT_PORT[@rails_env]
       @logger = Logger.new(options[:logfile] ? options[:logfile] : $stderr)
     end
 
@@ -45,17 +46,19 @@ module RemoteRails
       Thread.abort_on_exception = true
       loop do
         Thread.start(server.accept) do |s|
+          childpids = []
           begin
             while line = s.gets
               line.chomp!
               @logger.info("invoke: #{line}")
               start = Time.now
-              self.dispatch(s, line)
+              self.dispatch(s, line) { |pid| childpids << pid }
               finish = Time.now
               s.puts("FINISHED\t#{ finish - start }")
               @logger.info("finished: #{line}")
             end
           rescue Errno::EPIPE => e
+            Process.kill 'TERM', *childpids unless childpids.empty?
             @logger.error("client disconnect: " + e.message)
           end
         end
@@ -76,8 +79,6 @@ module RemoteRails
     end
 
     def dispatch(sock, line)
-      args = Shellwords.shellsplit(line)
-      subcmd = args.shift
       servsock_out, clisock_out = UNIXSocket.pair
       servsock_err, clisock_err = UNIXSocket.pair
       pid = fork do
@@ -86,40 +87,44 @@ module RemoteRails
         ActiveRecord::Base.establish_connection if defined?(ActiveRecord::Base)
         STDOUT.reopen(servsock_out)
         STDERR.reopen(servsock_err)
-        self.__send__("on_#{subcmd}", args)
+        execute *Shellwords.shellsplit(line)
       end
+      yield pid
       servsock_out.close
       servsock_err.close
+      buffers = {out: '', error: ''}
+      clisocks = {out: clisock_out, error: clisock_err}
       loop do
         if Process.waitpid(pid, Process::WNOHANG)
           return
         end
-        if IO.select([clisock_out], [], [], 0.1)
-          while line = clisock_out.gets
-            line.chomp!
-            sock.puts("OUT\t#{line}")
-          end
-        end
-        if IO.select([clisock_err], [], [], 0.1)
-          while line = clisock_err.gets
-            line.chomp!
-            @logger.error(line)
-            sock.puts("ERROR\t#{line}")
+        [:out, :error].each do |channel|
+          begin
+            buffers[channel] << clisocks[channel].read_nonblock(PAGE_SIZE)
+            while buffers[channel][/[\n\r]/]
+              line, buffers[channel] = buffers[channel].split(/[\n\r]/, 2)
+              sock.puts("#{channel.upcase}\t#{line}")
+            end
+          rescue Errno::EAGAIN, EOFError => ex
+            sleep 0.1
           end
         end
       end
     end
 
-    def on_rails(args)
+    def execute(cmd, *args)
       ARGV.clear
       ARGV.concat(args)
-      require 'rails/commands'
+      case cmd
+      when 'rails'
+        require 'rails/commands'
+      when 'rake'
+        ::Rake.application.run
+      else
+        @logger.warn "#{cmd} not supported"
+        raise RuntimeError.new("#{cmd} is not supported in rrails.")
+      end
     end
 
-    def on_rake(args)
-      ARGV.clear
-      ARGV.concat(args)
-      ::Rake.application.run
-    end
   end
 end
