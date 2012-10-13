@@ -95,9 +95,6 @@ module RemoteRails
       buffers = {out: '', error: ''}
       clisocks = {out: clisock_out, error: clisock_err}
       loop do
-        if Process.waitpid(pid, Process::WNOHANG)
-          return
-        end
         [:out, :error].each do |channel|
           begin
             buffers[channel] << clisocks[channel].read_nonblock(PAGE_SIZE)
@@ -106,8 +103,11 @@ module RemoteRails
               sock.puts("#{channel.upcase}\t#{line}")
             end
           rescue Errno::EAGAIN, EOFError => ex
-            sleep 0.1
+            sleep 0.01
           end
+        end
+        if Process.waitpid(pid, Process::WNOHANG)
+          return
         end
       end
     end
