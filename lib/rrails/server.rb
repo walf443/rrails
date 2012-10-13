@@ -7,8 +7,6 @@ require 'shellwords'
 
 # FIXME: rails command require APP_PATH constants.
 APP_PATH = File.expand_path('./config/application')
-PAGE_SIZE = 4096
-
 module RemoteRails
   # server to run rails/rake command.
   #
@@ -17,6 +15,8 @@ module RemoteRails
   #     server.start
   #
   class Server
+    PAGE_SIZE = 4096
+
     def initialize(options={})
       @rails_env = options[:rails_env] || "development"
       @app_path = File.expand_path('./config/application')
