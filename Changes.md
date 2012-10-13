@@ -1,3 +1,8 @@
+v0.3.1				2012-10-13 18:08:39 +0900
+------------------------------------------------------------------------
+ - FIX: PAGE_SIZE constants define constants outside RemoteRails::Server namespace.
+ - update doc.
+
 v0.3.0				2012-10-13 14:58:02 +0900
 ------------------------------------------------------------------------
  - FIX: some command that run under 0.1 sec is not output anything .
