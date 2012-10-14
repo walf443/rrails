@@ -7,6 +7,12 @@ require 'shellwords'
 require 'pty'
 require 'benchmark'
 
+# make IRB = Pry hacks (https://gist.github.com/941174) work:
+# pre-require all irb compoments needed in rails/commands
+# otherwise 'module IRB' will cause 'IRB is not a module' error.
+require 'irb'
+require 'irb/completion'
+
 # FIXME: rails command require APP_PATH constants.
 APP_PATH = File.expand_path('./config/application')
 module RemoteRails
@@ -70,6 +76,7 @@ module RemoteRails
       @logger.info("prepare rails environment (#{@rails_env})")
       ENV["RAILS_ENV"] = @rails_env
       require File.expand_path('./config/environment')
+      require 'rails/console/app' # for Rails::ConsoleMethods
 
       unless Rails.application.config.cache_classes
         ActionDispatch::Reloader.cleanup!
@@ -170,8 +177,6 @@ module RemoteRails
         require 'rails/commands'
       when 'rake'
         ::Rake.application.run
-      when 'pry'
-        Pry::CLI.parse_options
       else
         STDERR.puts "#{cmd} is not supported in RRails."
       end

@@ -23,7 +23,6 @@ Run rails/rake commands using rrails:
     $ rrails -- rake routes
     $ rrails -- rails server
     $ rrails -- rails console
-    $ rrails -- pry                # start pry as rails console
 
     # If you need an interactive console for non rails *console
     # commands, you may want to add '--pty' option.
