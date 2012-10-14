@@ -1,3 +1,11 @@
+# find Rails.root
+while not File.exists?('Gemfile')
+  Dir.chdir('..')
+  if Dir.pwd == '/'
+    raise RuntimeError.new("Can not find Rails.root")
+  end
+end
+
 require 'socket'
 require 'rrails'
 require 'logger'
@@ -22,7 +30,7 @@ module RemoteRails
   #
   class Server
     def initialize(options={})
-      @rails_env = options[:rails_env] || "development"
+      @rails_env = options[:rails_env] || ENV['RAILS_ENV'] || "development"
       @app_path = File.expand_path('./config/application')
       # should not access to outside
       @host = 'localhost'
@@ -72,11 +80,12 @@ module RemoteRails
     def boot_rails
       @logger.info("prepare rails environment (#{@rails_env})")
       ENV["RAILS_ENV"] = @rails_env
-      require File.expand_path('./config/application')
-      require File.expand_path('./config/boot')
       require File.expand_path('./config/environment')
-      require @app_path
-      Rails.application.require_environment!
+
+      if defined?(Pry)
+        puts 'pry defined'
+      end
+
       unless Rails.application.config.cache_classes
         ActionDispatch::Reloader.cleanup!
         ActionDispatch::Reloader.prepare!
@@ -112,7 +121,7 @@ module RemoteRails
 
       c_fds.map(&:close) if not pty
 
-      # input thread
+      # pump input. since it will block, make it in another thread
       thread = Thread.start do
         while running do
           begin
@@ -151,6 +160,7 @@ module RemoteRails
         sock.puts("PING")
         sock.flush
 
+        # do not make CPU hot
         sleep 0.1
       end
     ensure
@@ -159,7 +169,7 @@ module RemoteRails
       if pid
         begin
           Process.kill 0, pid
-          @logger.info "killing pid #{pid}"
+          @logger.debug "killing pid #{pid}"
           Process.kill 'TERM', pid rescue nil
         rescue Errno::ESRCH
         end
@@ -175,6 +185,8 @@ module RemoteRails
         require 'rails/commands'
       when 'rake'
         ::Rake.application.run
+      when 'pry'
+        Pry::CLI.parse_options
       else
         STDERR.puts "#{cmd} is not supported in RRails."
       end
