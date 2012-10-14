@@ -43,6 +43,8 @@ module RemoteRails
         if previous_pid > 0 && Process.kill(0, previous_pid)
           if @force
             Process.kill :TERM, previous_pid
+            # wait previous process clean up
+            sleep 1
           else
             return previous_pid
           end
