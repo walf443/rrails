@@ -246,10 +246,13 @@ module RemoteRails
     def execute(cmd, *args)
       ARGV.clear
       ARGV.concat(args)
+      $0 = cmd
       case cmd
       when 'rails'
         require 'rails/commands'
       when 'rake'
+        # full path of rake
+        $0 = Gem.bin_path('rake')
         ::Rake.application.run
       else
         STDERR.puts "#{cmd} is not supported in RRails."
