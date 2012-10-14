@@ -1,7 +1,5 @@
 require 'socket'
 require 'rrails'
-require 'shellwords'
-require 'optparse'
 require 'io/console'
 
 module RemoteRails
@@ -17,24 +15,6 @@ module RemoteRails
   #   client.run
   #
   class Client
-    def self.opts_parser(options = {})
-      opts = OptionParser.new
-      opts.banner = 'Usage: rrails [options] [[--] commands]'
-      opts.on('-E', '--rails_env=s', 'Set Rails env.')      {|v| options[:rails_env] = v}
-      opts.on('-s', '--socket=s', 'Set RRails server socket file.') {|v| options[:socket] = v}
-      opts.on('-t', '--[no-]pty', "Prepare a PTY. Default decided by commands.")  {|v| options[:pty] = v }
-      return opts
-    end
-
-    def self.new_with_options(argv)
-      options = {}
-      opts_parser(options).parse!(argv)
-
-      cmd = Shellwords.join(argv)
-      options[:cmd] = cmd == "" ? nil : cmd
-      self.new(options)
-    end
-
     def initialize(options={})
       @cmd = options[:cmd] || ""
       @rails_env = options[:rails_env] || ENV['RAILS_ENV'] || 'development'
@@ -50,11 +30,6 @@ module RemoteRails
     end
 
     def run
-      if @cmd.empty?
-        STDERR.puts Client.opts_parser
-        return
-      end
-
       sock = UNIXSocket.open(@socket)
       sock.puts("#{@use_pty ? 'P' : ' '}#@cmd")
       running = true

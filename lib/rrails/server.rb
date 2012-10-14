@@ -27,37 +27,54 @@ module RemoteRails
     PAGE_SIZE = 4096
 
     def initialize(options={})
-      @rails_env = options[:rails_env] || ENV['RAILS_ENV'] || "development"
-      @socket    = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
-      @pidfile   = "#{options[:pidfile] || './tmp/pids/rrails-'}#{@rails_env}.pid"
-      @force     = options[:force] || false
+      @rails_env  = options[:rails_env] || ENV['RAILS_ENV'] || "development"
+      @socket     = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
+      @pidfile    = "#{options[:pidfile] || './tmp/pids/rrails-'}#{@rails_env}.pid"
+      @background = options[:background] || false
 
-      @app_path  = File.expand_path('./config/application')
-      @logger    = Logger.new(options[:logfile] ? options[:logfile] : STDERR)
+      @app_path   = File.expand_path('./config/application')
+      @logger     = Logger.new(options[:logfile] ? options[:logfile] : (@background ? nil : STDERR))
+    end
+
+    def stop
+      pid = previous_instance
+      if pid
+        @logger.info "stopping previous instance #{pid}"
+        Process.kill :TERM, pid
+        FileUtils.rm_f [@socket, @pidfile]
+      end
+    end
+
+    def restart
+      stop && sleep(1)
+      start
+    end
+
+    def reload
+      pid = previous_instance
+      Process.kill :HUP, pid
     end
 
     def alive?
-      begin
-        previous_pid = File.read(@pidfile).to_i
+      previous_instance ? true : false
+    end
 
-        if previous_pid > 0 && Process.kill(0, previous_pid)
-          if @force
-            Process.kill :TERM, previous_pid
-            # wait previous process clean up
-            sleep 1
-          else
-            return previous_pid
-          end
-        end
-        false
-      rescue Errno::ESRCH, Errno::ENOENT
-        return false
-      end
+    def status
+      puts(previous_instance ? 'running' : 'stopped')
     end
 
     def start
       # check previous process
-      raise RuntimeError.new('RRails is already running') if alive?
+      raise RuntimeError.new('RRails is already running') if previous_instance
+
+      if @background
+        pid = Process.fork do
+          @background = false
+          start
+        end
+        Process.detach(pid)
+        return
+      end
 
       begin
         [@pidfile, @socket].each do |path|
@@ -87,10 +104,6 @@ module RemoteRails
         self.boot_rails
 
         Thread.abort_on_exception = true
-
-        if block_given?
-          Thread.start { yield }
-        end
 
         loop do
           Thread.start(server.accept) do |s|
@@ -213,6 +226,8 @@ module RemoteRails
       thread.kill if thread
     end
 
+    private
+
     def execute(cmd, *args)
       ARGV.clear
       ARGV.concat(args)
@@ -223,6 +238,19 @@ module RemoteRails
         ::Rake.application.run
       else
         STDERR.puts "#{cmd} is not supported in RRails."
+      end
+    end
+
+    def previous_instance
+      begin
+        previous_pid = File.read(@pidfile).to_i
+
+        if previous_pid > 0 && Process.kill(0, previous_pid)
+          return previous_pid
+        end
+        false
+      rescue Errno::ESRCH, Errno::ENOENT
+        return false
       end
     end
 
