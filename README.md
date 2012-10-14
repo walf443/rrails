@@ -42,7 +42,7 @@ For more options, run:
 
     $ rrails --help
 
-## Shell integration
+### Shell integration
 
 You may want to add following lines to your shell rc file:
 
