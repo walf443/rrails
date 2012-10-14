@@ -1,11 +1,3 @@
-# find Rails.root
-while not File.exists?('Gemfile')
-  Dir.chdir('..')
-  if Dir.pwd == '/'
-    raise RuntimeError.new("Can not find Rails.root")
-  end
-end
-
 require 'socket'
 require 'rrails'
 require 'logger'
@@ -14,13 +6,9 @@ require 'stringio'
 require 'shellwords'
 require 'pty'
 require 'benchmark'
-# require 'irb'
-# require 'pry'
 
 # FIXME: rails command require APP_PATH constants.
 APP_PATH = File.expand_path('./config/application')
-PAGE_SIZE = 4096
-
 module RemoteRails
   # server to run rails/rake command.
   #
@@ -29,6 +17,8 @@ module RemoteRails
   #     server.start
   #
   class Server
+    PAGE_SIZE = 4096
+
     def initialize(options={})
       @rails_env = options[:rails_env] || ENV['RAILS_ENV'] || "development"
       @app_path = File.expand_path('./config/application')
@@ -55,10 +45,10 @@ module RemoteRails
         ActionDispatch::Callbacks.new(Proc.new {}).call({})
         self.boot_rails
       end
-
       Thread.abort_on_exception = true
       loop do
         Thread.start(server.accept) do |s|
+          childpids = []
           begin
             line = s.gets.chomp
             pty, line = (line[0] == 'P'), line[1..-1]
@@ -81,10 +71,6 @@ module RemoteRails
       @logger.info("prepare rails environment (#{@rails_env})")
       ENV["RAILS_ENV"] = @rails_env
       require File.expand_path('./config/environment')
-
-      if defined?(Pry)
-        puts 'pry defined'
-      end
 
       unless Rails.application.config.cache_classes
         ActionDispatch::Reloader.cleanup!
