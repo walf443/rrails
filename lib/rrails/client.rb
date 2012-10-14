@@ -20,6 +20,7 @@ module RemoteRails
       @rails_env = options[:rails_env] || ENV['RAILS_ENV'] || 'development'
       @socket = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
       @use_pty = options[:pty]
+      @ondemand_callback = options[:ondemand_callback]
       if @use_pty.nil?
         # decide use_pty from cmd
         case @cmd
@@ -30,7 +31,16 @@ module RemoteRails
     end
 
     def run
-      sock = UNIXSocket.open(@socket)
+      sock = nil
+      begin
+        sock = UNIXSocket.open(@socket)
+      rescue
+        if @ondemand_callback
+          @ondemand_callback.call
+          sock = UNIXSocket.open(@socket)
+        end
+      end
+
       sock.puts("#{@use_pty ? 'P' : ' '}#@cmd")
       running = true
 
@@ -52,7 +62,7 @@ module RemoteRails
         while running && line = sock.gets
           case line.chomp
           when /^EXIT\t(.+)$/
-            exit($1.to_i)
+            return $1.to_i
           when /^OUT\t(.+)$/
             STDOUT.write($1.split(',').map(&:to_i).pack('c*'))
           when /^ERR\t(.+)$/
@@ -64,11 +74,11 @@ module RemoteRails
         running = false
       rescue Interrupt
         running = false
-        exit 130
+        return 130
       end
 
       STDERR.puts "\nERROR: RRails server disconnected"
-      exit -1
+      return -1
     end
 
   end

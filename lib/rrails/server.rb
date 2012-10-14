@@ -42,6 +42,7 @@ module RemoteRails
         @logger.info "stopping previous instance #{pid}"
         Process.kill :TERM, pid
         FileUtils.rm_f [@socket, @pidfile]
+        return true
       end
     end
 
@@ -60,12 +61,17 @@ module RemoteRails
     end
 
     def status
-      puts(previous_instance ? 'running' : 'stopped')
+      pid = previous_instance
+      if pid
+        puts "running \tpid = #{pid}"
+      else
+        puts 'stopped'
+      end
     end
 
     def start
       # check previous process
-      raise RuntimeError.new('RRails is already running') if previous_instance
+      raise RuntimeError.new('RRails is already running') if alive?
 
       if @background
         pid = Process.fork do
@@ -76,6 +82,7 @@ module RemoteRails
         return
       end
 
+      require 'bundler/setup'
       begin
         [@pidfile, @socket].each do |path|
           FileUtils.rm_f path
@@ -107,6 +114,7 @@ module RemoteRails
 
         loop do
           Thread.start(server.accept) do |s|
+            @logger.debug("accepted")
             begin
               line = s.gets.chomp
               pty, line = (line[0] == 'P'), line[1..-1]
@@ -117,6 +125,7 @@ module RemoteRails
               end
               exitcode = status ? status.exitstatus || (status.termsig + 128) : 0
               s.puts("EXIT\t#{exitcode}")
+              s.flush
               @logger.info("finished: #{line} (#{time} seconds)")
             rescue Errno::EPIPE
               @logger.info("disconnected: #{line}")
@@ -159,6 +168,8 @@ module RemoteRails
       end
 
       running = true
+      heartbeat = 0
+
       pid = fork do
         m_fds.map(&:close) if not pty
         STDIN.reopen(c_in)
@@ -206,11 +217,15 @@ module RemoteRails
         end
 
         # send heartbeat so that we got EPIPE immediately when client dies
-        sock.puts("PING")
-        sock.flush
+        heartbeat += 1
+        if heartbeat > 20
+          sock.puts("PING")
+          sock.flush
+          heartbeat = 0
+        end
 
         # do not make CPU hot
-        sleep 0.1
+        sleep 0.025
       end
     ensure
       running = false
@@ -248,7 +263,7 @@ module RemoteRails
         if previous_pid > 0 && Process.kill(0, previous_pid)
           return previous_pid
         end
-        false
+        return false
       rescue Errno::ESRCH, Errno::ENOENT
         return false
       end
