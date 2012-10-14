@@ -1,16 +1,48 @@
 = rrails
 
-remote run rails/rake command.
+Preload rails environment in Remote server to make rails/rake commands faster.
+
+== Requirements
+
+* non-Windows OS
+* Ruby 1.9.3
 
 == Usage
 
-    # run server
+Start server:
+
     $ cd ~/rails_project
+    $ export RAILS_ENV=development # optionally
     $ bundle exec rrails-server
     
-    # on another console.
+Run rails/rake commands using rrails:
+
+    $ export RAILS_ENV=development # optionally
     $ rrails -- rails generate model Yakiniku
-    $ rrails -E test -- rake db:migrate
+    $ rrails -- rake db:migrate
+    $ rrails -- rake routes
+    $ rrails -- rails server
+    $ rrails -- rails console
+    $ rrails -- pry                # start pry as rails console
+
+    # If you need an interactive console for non rails *console
+    # commands, you may want to add '--pty' option.
+    # This makes sure that interactive things (like line editing)
+    # work correctly, but it also redirect all STDERR to STDOUT
+    # and keys like ^C may not work correctly.
+    $ rrails --pty -- rails server # use debugger
+
+You may want to add following code to your shell rc file:
+
+    rrails-exec() {
+        if pgrep -f rrails-server >/dev/null && grep -q rrails Gemfile.lock &>/dev/null; then
+            rrails -- "$@"
+        else
+            command "$@"
+        fi
+    }
+    alias rails='rrails-exec rails'
+    alias rake='rrails-exec rake'
 
 == Description
 
@@ -22,12 +54,6 @@ rails-sh is very good solution for this issue. But
 * it can't use zsh's histroy.
 
 So I wrote rrails.
-
-== Problem
-
-rrails can't work folloing commands:
-* rake (console|dbconsole): please use rails-sh
-* rake server
 
 == SEE ALSO
 
@@ -46,6 +72,9 @@ rrails can't work folloing commands:
 
 == Copyright
 
-Copyright (c) 2012 Keiji, Yoshimi. See LICENSE.txt for
-further details.
+Copyright (c) 2012 Keiji, Yoshimi.
+<br>
+Copyright (c) 2012 Wu Jun.
+
+See LICENSE.txt for further details.
 
