@@ -20,9 +20,9 @@ module RemoteRails
     def self.opts_parser(options = {})
       opts = OptionParser.new
       opts.banner = 'Usage: rrails [options] [[--] commands]'
-      opts.on('-h', '--host=s', 'RRails server hostname. Default value is "localhost".')      {|v| options[:host] = v }
-      opts.on('-p', '--port=i', 'RRails server port. Default value is decided from RAILS_ENV.')      {|v| options[:port] = v }
-      opts.on('-t', '--[no-]pty', "Prepare a PTY. Default value is decided by commands.")      {|v| options[:pty] = v }
+      opts.on('-E', '--rails_env=s', 'Set Rails env.')      {|v| options[:rails_env] = v}
+      opts.on('-s', '--socket=s', 'Set RRails server socket file.') {|v| options[:socket] = v}
+      opts.on('-t', '--[no-]pty', "Prepare a PTY. Default decided by commands.")  {|v| options[:pty] = v }
       return opts
     end
 
@@ -37,8 +37,8 @@ module RemoteRails
 
     def initialize(options={})
       @cmd = options[:cmd] || ""
-      @host = options[:host] || 'localhost'
-      @port = options[:port] || DEFAULT_PORT[ENV['RAILS_ENV'] || 'development']
+      @rails_env = options[:rails_env] || ENV['RAILS_ENV'] || 'development'
+      @socket = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
       @use_pty = options[:pty]
       if @use_pty.nil?
         # decide use_pty from cmd
@@ -55,7 +55,7 @@ module RemoteRails
         return
       end
 
-      sock = TCPSocket.open(@host, @port)
+      sock = UNIXSocket.open(@socket)
       sock.puts("#{@use_pty ? 'P' : ' '}#@cmd")
       running = true
 
