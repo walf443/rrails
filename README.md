@@ -91,7 +91,7 @@ The server writes pid and socket files to `./tmp/` and remove them when exiting.
 
 You can control the server using:
 
-    $ export RAILS_ENV=development            # optionally
+    $ export RAILS_ENV=development         # optionally
     $ rrails stop
     $ rrails restart
     $ rrails reload
