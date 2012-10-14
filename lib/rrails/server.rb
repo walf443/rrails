@@ -4,6 +4,15 @@ require 'logger'
 require 'rake'
 require 'stringio'
 require 'shellwords'
+require 'pty'
+require 'benchmark'
+require 'fileutils'
+
+# make IRB = Pry hacks (https://gist.github.com/941174) work:
+# pre-require all irb compoments needed in rails/commands
+# otherwise 'module IRB' will cause 'IRB is not a module' error.
+require 'irb'
+require 'irb/completion'
 
 # FIXME: rails command require APP_PATH constants.
 APP_PATH = File.expand_path('./config/application')
@@ -18,59 +27,123 @@ module RemoteRails
     PAGE_SIZE = 4096
 
     def initialize(options={})
-      @rails_env = options[:rails_env] || "development"
-      @app_path = File.expand_path('./config/application')
-      # should not access to outside
-      @host = 'localhost'
-      @port = options[:port] || DEFAULT_PORT[@rails_env]
-      @logger = Logger.new(options[:logfile] ? options[:logfile] : $stderr)
+      @rails_env  = options[:rails_env] || ENV['RAILS_ENV'] || "development"
+      @socket     = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
+      @pidfile    = "#{options[:pidfile] || './tmp/pids/rrails-'}#{@rails_env}.pid"
+      @background = options[:background] || false
+
+      @app_path   = File.expand_path('./config/application')
+      @logger     = Logger.new(options[:logfile] ? options[:logfile] : (@background ? nil : STDERR))
+    end
+
+    def stop
+      pid = previous_instance
+      if pid
+        @logger.info "stopping previous instance #{pid}"
+        Process.kill :TERM, pid
+        FileUtils.rm_f [@socket, @pidfile]
+        return true
+      end
+    end
+
+    def restart
+      stop && sleep(1)
+      start
+    end
+
+    def reload
+      pid = previous_instance
+      Process.kill :HUP, pid
+    end
+
+    def alive?
+      previous_instance ? true : false
+    end
+
+    def status
+      pid = previous_instance
+      if pid
+        puts "running \tpid = #{pid}"
+      else
+        puts 'stopped'
+      end
     end
 
     def start
-      self.boot_rails
-      server = TCPServer.open(@host, @port)
-      @logger.info("starting rrails server on #{@host}:#{@port}")
-      trap(:INT) do
-        @logger.info("SIGINT recieved. shutdown...")
-        exit
+      # check previous process
+      raise RuntimeError.new('RRails is already running') if alive?
+
+      if @background
+        pid = Process.fork do
+          @background = false
+          start
+        end
+        Process.detach(pid)
+        return
       end
-      trap(:TERM) do
-        @logger.info("SIGTERM recieved. shutdown...")
-        exit
-      end
-      trap(:HUP) do
-        @logger.info("SIGHUP recieved. reload...")
-        ActionDispatch::Callbacks.new(Proc.new {}).call({})
-        self.boot_rails
-      end
-      Thread.abort_on_exception = true
-      loop do
-        Thread.start(server.accept) do |s|
-          childpids = []
-          begin
-            while line = s.gets
-              line.chomp!
-              @logger.info("invoke: #{line}")
-              start = Time.now
-              self.dispatch(s, line) { |pid| childpids << pid }
-              finish = Time.now
-              s.puts("FINISHED\t#{ finish - start }")
-              @logger.info("finished: #{line}")
-            end
-          rescue Errno::EPIPE => e
-            Process.kill 'TERM', *childpids unless childpids.empty?
-            @logger.error("client disconnect: " + e.message)
+
+      require 'bundler/setup'
+      begin
+        [@pidfile, @socket].each do |path|
+          FileUtils.rm_f path
+          FileUtils.mkdir_p File.dirname(path)
+        end
+
+        File.write(@pidfile, $$)
+        server = UNIXServer.open(@socket)
+        server.close_on_exec = true
+
+        @logger.info("starting rrails server: #{@socket}")
+
+        [:INT, :TERM].each do |sig|
+          trap(sig) do
+            @logger.info("SIG#{sig} recieved. shutdown...")
+            exit
           end
         end
+
+        trap(:HUP) do
+          @logger.info("SIGHUP recieved. reload...")
+          ActionDispatch::Callbacks.new(Proc.new {}).call({})
+          self.boot_rails
+        end
+
+        self.boot_rails
+
+        Thread.abort_on_exception = true
+
+        loop do
+          Thread.start(server.accept) do |s|
+            @logger.debug("accepted")
+            begin
+              line = s.gets.chomp
+              pty, line = (line[0] == 'P'), line[1..-1]
+              @logger.info("invoke: #{line} (pty=#{pty})")
+              status = nil
+              time = Benchmark.realtime do
+                status = dispatch(s, line, pty)
+              end
+              exitcode = status ? status.exitstatus || (status.termsig + 128) : 0
+              s.puts("EXIT\t#{exitcode}")
+              s.flush
+              @logger.info("finished: #{line} (#{time} seconds)")
+            rescue Errno::EPIPE
+              @logger.info("disconnected: #{line}")
+            end
+          end
+        end
+      ensure
+        server.close unless server.closed?
+        @logger.info("cleaning pid and socket files...")
+        FileUtils.rm_f [@socket, @pidfile]
       end
     end
 
     def boot_rails
-      @logger.info("prepare rails environment")
+      @logger.info("prepare rails environment (#{@rails_env})")
       ENV["RAILS_ENV"] = @rails_env
-      require File.expand_path('./config/boot')
-      require @app_path
-      Rails.application.require_environment!
+      require File.expand_path('./config/environment')
+
       unless Rails.application.config.cache_classes
         ActionDispatch::Reloader.cleanup!
         ActionDispatch::Reloader.prepare!
@@ -78,39 +151,97 @@ module RemoteRails
       @logger.info("finished preparing rails environment")
     end
 
-    def dispatch(sock, line)
-      servsock_out, clisock_out = UNIXSocket.pair
-      servsock_err, clisock_err = UNIXSocket.pair
+    def dispatch(sock, line, pty=false)
+      if pty
+        m_out, c_out = PTY.open
+        c_in = c_err = c_out
+        m_fds = [m_out, c_out]
+        c_fds = [c_out]
+        clisocks = {in: m_out, out: m_out}
+      else
+        c_in, m_in = IO.pipe
+        m_out, c_out = IO.pipe
+        m_err, c_err = IO.pipe
+        m_fds = [m_in, m_out, m_err]
+        c_fds = [c_in, c_out, c_err]
+        clisocks = {in: m_in, out: m_out, err: m_err}
+      end
+
+      running = true
+      heartbeat = 0
+
       pid = fork do
-        clisock_out.close
-        clisock_err.close
+        m_fds.map(&:close) if not pty
+        STDIN.reopen(c_in)
+        STDOUT.reopen(c_out)
+        STDERR.reopen(c_err)
         ActiveRecord::Base.establish_connection if defined?(ActiveRecord::Base)
-        STDOUT.reopen(servsock_out)
-        STDERR.reopen(servsock_err)
         execute *Shellwords.shellsplit(line)
       end
-      yield pid
-      servsock_out.close
-      servsock_err.close
-      buffers = {out: '', error: ''}
-      clisocks = {out: clisock_out, error: clisock_err}
-      loop do
-        [:out, :error].each do |channel|
+
+      c_fds.map(&:close) if not pty
+
+      # pump input. since it will block, make it in another thread
+      thread = Thread.start do
+        while running do
           begin
-            buffers[channel] << clisocks[channel].read_nonblock(PAGE_SIZE)
-            while buffers[channel][/[\n\r]/]
-              line, buffers[channel] = buffers[channel].split(/[\n\r]/, 2)
-              sock.puts("#{channel.upcase}\t#{line}")
-            end
-          rescue Errno::EAGAIN, EOFError => ex
-            sleep 0.01
+            input = sock.__send__(pty ? :getc : :gets)
+          rescue => ex
+            @logger.debug "input thread got #{ex}"
+            running = false
           end
-        end
-        if Process.waitpid(pid, Process::WNOHANG)
-          return
+          clisocks[:in].write(input) rescue nil
         end
       end
+
+      loop do
+        [:out, :err].each do |channel|
+          next if not clisocks[channel]
+          begin
+            loop do
+              response = clisocks[channel].read_nonblock(PAGE_SIZE)
+              sock.puts("#{channel.upcase}\t#{response.bytes.to_a.join(',')}")
+              sock.flush
+            end
+          rescue Errno::EAGAIN, EOFError => ex
+            next
+          end
+        end
+
+        if running
+          _, stat = Process.waitpid2(pid, Process::WNOHANG)
+          if stat
+            @logger.debug "child exits. #{stat}"
+            return stat
+          end
+        end
+
+        # send heartbeat so that we got EPIPE immediately when client dies
+        heartbeat += 1
+        if heartbeat > 20
+          sock.puts("PING")
+          sock.flush
+          heartbeat = 0
+        end
+
+        # do not make CPU hot
+        sleep 0.025
+      end
+    ensure
+      running = false
+      [*c_fds, *m_fds].each {|io| io.close unless io.closed?}
+      if pid
+        begin
+          Process.kill 0, pid
+          @logger.debug "killing pid #{pid}"
+          Process.kill 'TERM', pid rescue nil
+        rescue Errno::ESRCH
+        end
+      end
+      thread.kill if thread
     end
+
+    private
 
     def execute(cmd, *args)
       ARGV.clear
@@ -121,8 +252,20 @@ module RemoteRails
       when 'rake'
         ::Rake.application.run
       else
-        @logger.warn "#{cmd} not supported"
-        raise RuntimeError.new("#{cmd} is not supported in rrails.")
+        STDERR.puts "#{cmd} is not supported in RRails."
+      end
+    end
+
+    def previous_instance
+      begin
+        previous_pid = File.read(@pidfile).to_i
+
+        if previous_pid > 0 && Process.kill(0, previous_pid)
+          return previous_pid
+        end
+        return false
+      rescue Errno::ESRCH, Errno::ENOENT
+        return false
       end
     end
 
