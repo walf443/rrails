@@ -48,7 +48,6 @@ module RemoteRails
       Thread.abort_on_exception = true
       loop do
         Thread.start(server.accept) do |s|
-          childpids = []
           begin
             line = s.gets.chomp
             pty, line = (line[0] == 'P'), line[1..-1]
