@@ -1,13 +1,13 @@
-= rrails
+# rrails
 
 Preload rails environment in Remote server to make rails/rake commands faster.
 
-== Requirements
+## Requirements
 
 * non-Windows OS
 * Ruby 1.9.3
 
-== Usage
+## Usage
 
 Start server:
 
@@ -44,23 +44,24 @@ You may want to add following code to your shell rc file:
     alias rails='rrails-exec rails'
     alias rake='rrails-exec rake'
 
-== Description
+## Description
 
 rails command is too slow. and rake command is too slow under rails environment.
 So, rrails can run rails/rake commands by preloaded daemon.
 
 rails-sh is very good solution for this issue. But
+
 * it can't run "rake -T"
 * it can't use zsh's histroy.
 
 So I wrote rrails.
 
-== SEE ALSO
+## See Also
 
 * guard-rrails: https://github.com/walf443/guard-rrails
 * rails-sh: https://github.com/jugyo/rails-sh
 
-== Contributing to rrails
+## Contributing to rrails
  
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet.
 * Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it.
@@ -70,10 +71,9 @@ So I wrote rrails.
 * Make sure to add tests for it. This is important so I don't break it in a future version unintentionally.
 * Please try not to mess with the Rakefile, version, or history. If you want to have your own version, or is otherwise necessary, that is fine, but please isolate to its own commit so I can cherry-pick around it.
 
-== Copyright
+## Copyright
 
-Copyright (c) 2012 Keiji, Yoshimi.
-<br>
+Copyright (c) 2012 Keiji, Yoshimi. <br>
 Copyright (c) 2012 Wu Jun.
 
 See LICENSE.txt for further details.
