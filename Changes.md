@@ -1,6 +1,18 @@
-v0.3.1				2012-10-13 18:08:39 +0900
+v0.4.0				2012-10-15 09:56:00 +0900
 ------------------------------------------------------------------------
- - FIX: PAGE_SIZE constants define constants outside RemoteRails::Server namespace.
+ - MOD: pty support. So you can use rails console/server from rrails. (thanks quark-zju)
+ - MOD: pry support. (thansk quark-zju)
+ - MOD: add --host option. (thanks quark-zju)
+ - MOD: Change UNIXDomainSocket to IO.pipe. (thanks quark-zju)
+
+v0.3.1				2012-10-13 18:22:08 +0900
+------------------------------------------------------------------------
+ - (tag: v0.3.1) Regenerate gemspec for version 0.3.1
+ - Version bump to 0.3.1
+ - update changes.
+ - it should not define constants outside RemoteRails::Server namespace.
+ - restyle again.
+ - use markdown style.
  - update doc.
 
 v0.3.0				2012-10-13 14:58:02 +0900
