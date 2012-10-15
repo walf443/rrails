@@ -1,7 +1,5 @@
 require 'socket'
 require 'rrails'
-require 'shellwords'
-require 'optparse'
 require 'io/console'
 
 module RemoteRails
@@ -17,32 +15,27 @@ module RemoteRails
   #   client.run
   #
   class Client
-    def self.opts_parser(options = {})
-      opts = OptionParser.new
-      opts.banner = 'Usage: rrails [options] [[--] commands]'
-      opts.on('-h', '--help', 'This help.')      {|v| options[:help] = v }
-      opts.on('--host=s', 'RRails server hostname. Default value is "localhost".')      {|v| options[:host] = v }
-      opts.on('-E', '--rails_env=s') {|v| options[:rails_env] = v }
-      opts.on('-p', '--port=i', 'RRails server port. Default value is decided from RAILS_ENV.')      {|v| options[:port] = v }
-      opts.on('-t', '--[no-]pty', "Prepare a PTY. Default value is decided by commands.")      {|v| options[:pty] = v }
-      return opts
-    end
-
-    def self.new_with_options(argv)
-      options = {}
-      opts_parser(options).parse!(argv)
-
-      cmd = Shellwords.join(argv)
-      options[:cmd] = cmd == "" ? nil : cmd
-      self.new(options)
-    end
-
     def initialize(options={})
       @cmd = options[:cmd] || ""
-      @host = options[:host] || 'localhost'
+
       @rails_env = options[:rails_env] || ENV['RAILS_ENV'] || 'development'
+
+      @socket = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
+      @host = options[:host] || 'localhost'
       @port = options[:port] || DEFAULT_PORT[@rails_env]
+
       @use_pty = options[:pty]
+      @ondemand_callback = options[:ondemand_callback]
+
+      if @cmd.is_a? Array
+        require 'shellwords'
+        @cmd = Shellwords.join(@cmd)
+      end
+
+      if (options[:host] || options[:port]) && (!options[:socket])
+        @socket = nil
+      end
+
       if @use_pty.nil?
         # decide use_pty from cmd
         case @cmd
@@ -53,12 +46,16 @@ module RemoteRails
     end
 
     def run
-      if @cmd.empty?
-        STDERR.puts Client.opts_parser
-        return
+      sock = nil
+      begin
+        sock = connect
+      rescue
+        if @ondemand_callback
+          @ondemand_callback.call
+          sock = connect
+        end
       end
 
-      sock = TCPSocket.open(@host, @port)
       sock.puts("#{@use_pty ? 'P' : ' '}#@cmd")
       running = true
 
@@ -80,7 +77,7 @@ module RemoteRails
         while running && line = sock.gets
           case line.chomp
           when /^EXIT\t(.+)$/
-            exit($1.to_i)
+            return $1.to_i
           when /^OUT\t(.+)$/
             STDOUT.write($1.split(',').map(&:to_i).pack('c*'))
           when /^ERR\t(.+)$/
@@ -92,12 +89,26 @@ module RemoteRails
         running = false
       rescue Interrupt
         running = false
-        exit 130
+        return 130
+      ensure
+        running = false
+        thread.kill
       end
 
-      STDERR.puts "\nERROR: RRails server disconnected"
-      exit -1
+      STDERR.puts "\r\nERROR: RRails server disconnected"
+      return -1
+    end
+
+    private
+
+    def connect
+      if @socket
+        UNIXSocket.open(@socket)
+      else
+        TCPSocket.open(@host, @port)
+      end
     end
 
   end
+
 end
