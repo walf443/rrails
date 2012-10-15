@@ -28,10 +28,14 @@ module RemoteRails
 
     def initialize(options={})
       @rails_env  = options[:rails_env] || ENV['RAILS_ENV'] || "development"
-      @socket     = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
       @pidfile    = "#{options[:pidfile] || './tmp/pids/rrails-'}#{@rails_env}.pid"
       @background = options[:background] || false
-
+      @host       = options[:host] || 'localhost'
+      @port       = options[:port] || DEFAULT_PORT[@rails_env]
+      @socket     = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
+      if (options[:host] || options[:port]) && !options[:socket]
+        @socket = nil
+      fi
       @app_path   = File.expand_path('./config/application')
       @logger     = Logger.new(options[:logfile] ? options[:logfile] : (@background ? nil : STDERR))
     end
@@ -84,13 +88,17 @@ module RemoteRails
 
       require 'bundler/setup'
       begin
-        [@pidfile, @socket].each do |path|
+        [@pidfile, @socket].compact.each do |path|
           FileUtils.rm_f path
           FileUtils.mkdir_p File.dirname(path)
         end
 
         File.write(@pidfile, $$)
-        server = UNIXServer.open(@socket)
+        server = if @socket
+                   UNIXServer.open(@socket)
+                 else
+                   TCPServer.open(@host, @port)
+                 end
         server.close_on_exec = true
 
         @logger.info("starting rrails server: #{@socket}")
@@ -135,7 +143,7 @@ module RemoteRails
       ensure
         server.close unless server.closed?
         @logger.info("cleaning pid and socket files...")
-        FileUtils.rm_f [@socket, @pidfile]
+        FileUtils.rm_f [@socket, @pidfile].compact
       end
     end
 

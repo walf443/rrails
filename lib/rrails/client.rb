@@ -17,10 +17,25 @@ module RemoteRails
   class Client
     def initialize(options={})
       @cmd = options[:cmd] || ""
+
       @rails_env = options[:rails_env] || ENV['RAILS_ENV'] || 'development'
+
       @socket = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
+      @host = options[:host] || 'localhost'
+      @port = options[:port] || DEFAULT_PORT[@rails_env]
+
       @use_pty = options[:pty]
       @ondemand_callback = options[:ondemand_callback]
+
+      if @cmd.is_a? Array
+        require 'shellwords'
+        @cmd = Shellwords.join(@cmd)
+      end
+
+      if (options[:host] || options[:port]) && (!options[:socket])
+        @socket = nil
+      end
+
       if @use_pty.nil?
         # decide use_pty from cmd
         case @cmd
@@ -33,11 +48,11 @@ module RemoteRails
     def run
       sock = nil
       begin
-        sock = UNIXSocket.open(@socket)
+        sock = connect
       rescue
         if @ondemand_callback
           @ondemand_callback.call
-          sock = UNIXSocket.open(@socket)
+          sock = connect
         end
       end
 
@@ -75,11 +90,23 @@ module RemoteRails
       rescue Interrupt
         running = false
         return 130
+      ensure
+        running = false
+        thread.kill
       end
 
-      STDERR.puts "\nERROR: RRails server disconnected"
+      STDERR.puts "\r\nERROR: RRails server disconnected"
       return -1
     end
+  end
 
+  private
+
+  def connect
+    if @socket
+      UNIXSocket.open(@socket)
+    else
+      TCPSocket.open(@host, @port)
+    end
   end
 end

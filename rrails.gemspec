@@ -5,17 +5,17 @@
 
 Gem::Specification.new do |s|
   s.name = "rrails"
-  s.version = "0.3.1"
+  s.version = "0.4.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Keiji, Yoshimi"]
-  s.date = "2012-10-13"
+  s.date = "2012-10-15"
   s.description = "remote run rails/rake command"
   s.email = "walf443@gmail.com"
   s.executables = ["rrails", "rrails-server"]
   s.extra_rdoc_files = [
     "LICENSE.txt",
-    "README.rdoc"
+    "README.md"
   ]
   s.files = [
     ".document",
@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
     "Gemfile",
     "Gemfile.lock",
     "LICENSE.txt",
-    "README.rdoc",
+    "README.md",
     "Rakefile",
     "VERSION",
     "bin/rrails",
