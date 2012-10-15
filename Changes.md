@@ -1,6 +1,23 @@
 v0.3.1				2012-10-13 18:08:39 +0900
 ------------------------------------------------------------------------
- - FIX: PAGE_SIZE constants define constants outside RemoteRails::Server namespace.
+ - (HEAD, master) Version bump to 0.4.0
+ - (origin/master, origin/HEAD) Merge branch 'pty-support'
+ - (pty-support) refs #5 some option fix.
+ - (quark-zju/pty-support) README: change from rdoc to md which supports <br>
+ - update README and LICENSE
+ - minor changes after merge
+ - Merge branch 'master' into pty-support
+ - minor improments. add 'pry'
+ - add pty switch. and more:
+
+v0.3.1				2012-10-13 18:22:08 +0900
+------------------------------------------------------------------------
+ - (tag: v0.3.1) Regenerate gemspec for version 0.3.1
+ - Version bump to 0.3.1
+ - update changes.
+ - it should not define constants outside RemoteRails::Server namespace.
+ - restyle again.
+ - use markdown style.
  - update doc.
 
 v0.3.0				2012-10-13 14:58:02 +0900
