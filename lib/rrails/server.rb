@@ -172,7 +172,11 @@ module RemoteRails
       when 'rake'
         ::Rake.application.run
       when 'pry'
-        Pry::CLI.parse_options
+        begin
+        ::Pry::CLI.parse_options
+        rescue NameError
+          STDERR.puts "if you want to use pry. you should add 'pry' to Gemfile."
+        end
       else
         STDERR.puts "#{cmd} is not supported in RRails."
       end
