@@ -79,6 +79,7 @@ module RemoteRails
     end
 
     def dispatch(sock, line, pty=false)
+
       if pty
         m_out, c_out = PTY.open
         c_in = c_err = c_out
