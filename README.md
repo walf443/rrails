@@ -14,7 +14,7 @@ Without rrails:
 With rrails:
 
     $ source <(rrails shellrc)
-    $ rrails start                  # optionally
+    $ rrails start                         # optionally
 
     $ time ( rails generate >/dev/null )
     ( rails generate > /dev/null; )  0.05s user 0.01s system 6% cpu 0.904 total
@@ -84,6 +84,11 @@ If you need an interactive console for other commands, you can add `--pty` optio
 
     $ rrails --pty rails server            # if debugger is in use
 
+Note: PTY mode does not support nested programs. For example, `pry` runs `less` 
+as its pager. This doesn't work properly. You need disable the pager of pry:
+
+    Pry.config.pager = false
+
 ### The server
 
 By default, rrails will start a server process on demand per project per rails\_env.
@@ -103,7 +108,7 @@ You can control the server using:
 * rails-sh: https://github.com/jugyo/rails-sh
 
 ## Contributing to rrails
- 
+
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet.
 * Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it.
 * Fork the project.
