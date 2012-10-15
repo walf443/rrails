@@ -3,12 +3,14 @@
 $:.unshift File.expand_path('../../lib', __FILE__)
 
 # goto project root
-while not File.exists?('Gemfile') do
-  Dir.chdir('..')
-  break if Dir.pwd == '/'
-end
-if not File.exists?('Gemfile')
-  raise RuntimeError.new('Can not locate project root')
+def chdir_to_project_root
+  while not File.exists?('Gemfile') do
+    Dir.chdir('..')
+    break if Dir.pwd == '/'
+  end
+  if not File.exists?('Gemfile')
+    raise RuntimeError.new('Can not locate project root')
+  end
 end
 
 # parse options
@@ -40,6 +42,7 @@ when nil, ''
 when /^s(erver)$/
 when 'start', 'stop', 'reload', 'restart', 'status'
   # server
+  chdir_to_project_root
   require 'rrails/server'
   RemoteRails::Server.new(options).send(ARGV.first)
 when /shellrc/
@@ -59,6 +62,8 @@ when /shellrc/
   rc.gsub! /^    /, ''
   puts rc
 else
+  chdir_to_project_root
+
   # check server and start server on demand
   if options[:ondemand]
     options[:ondemand_callback] = proc do
