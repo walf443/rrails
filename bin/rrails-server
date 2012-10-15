@@ -2,6 +2,9 @@
 
 ENV["RAILS_ENV"] ||= ARGV.shift
 $:.unshift File.expand_path('../../lib', __FILE__)
+warn "-------------------------------------------------------------------------------------------------------------"
+warn "rrails-server command is obsolate. This command will be deleted in future. Please use 'rrails start' instead."
+warn "-------------------------------------------------------------------------------------------------------------"
 require 'rrails'
 require 'rrails/server'
 RemoteRails::Server.new.start
