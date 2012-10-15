@@ -23,7 +23,7 @@ With rrails:
 
 ## Requirements
 
-* non-Windows OS
+* POSIX Environment (Linux 2.6 - , Mac OSX Montain Lion). Windows is not supported.
 * Ruby 1.9.3p194 or above
 
 ## Usage
