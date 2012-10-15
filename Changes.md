@@ -1,14 +1,9 @@
-v0.3.1				2012-10-13 18:08:39 +0900
+v0.4.0				2012-10-15 09:56:00 +0900
 ------------------------------------------------------------------------
- - (HEAD, master) Version bump to 0.4.0
- - (origin/master, origin/HEAD) Merge branch 'pty-support'
- - (pty-support) refs #5 some option fix.
- - (quark-zju/pty-support) README: change from rdoc to md which supports <br>
- - update README and LICENSE
- - minor changes after merge
- - Merge branch 'master' into pty-support
- - minor improments. add 'pry'
- - add pty switch. and more:
+ - MOD: pty support. So you can use rails console/server from rrails. (thanks quark-zju)
+ - MOD: pry support. (thansk quark-zju)
+ - MOD: add --host option. (thanks quark-zju)
+ - MOD: Change UNIXDomainSocket to IO.pipe. (thanks quark-zju)
 
 v0.3.1				2012-10-13 18:22:08 +0900
 ------------------------------------------------------------------------
