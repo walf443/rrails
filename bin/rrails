@@ -25,6 +25,7 @@ Usage: rrails [options] [-- rails_or_rake_cmds]
 
 Options:
 !
+opts.on('-h', '--help', 'Show this document.')      {}
 opts.on('-E', '--rails_env=s', 'Set Rails env.')      {|v| options[:rails_env] = v}
 opts.on('-s', '--socket=s', 'Set RRails server socket file. If this is set, host and port are ignored.') {|v| options[:socket] = v}
 opts.on('--host=s', 'Set server hostname. Default: localhost.') {|v| options[:host] = v}
