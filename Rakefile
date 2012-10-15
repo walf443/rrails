@@ -21,6 +21,7 @@ Jeweler::Tasks.new do |gem|
   gem.description = %Q{remote run rails/rake command}
   gem.email = "walf443@gmail.com"
   gem.authors = ["Keiji, Yoshimi"]
+  gem.extra_rdoc_files = %w[Changes.md README.md LICENSE.txt]
   # dependencies defined in Gemfile
 end
 Jeweler::RubygemsDotOrgTasks.new
