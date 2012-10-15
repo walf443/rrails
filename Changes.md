@@ -1,3 +1,9 @@
+v1.0.0				2012-10-16 01:03:00 +0900
+ - XXX: It may have many imcopatible changes. "1.0.0" does not mean "stable version".
+ - MOD: support UNIXDomainSocket instead of TCPSocket. And UnixDomainSocket is default behaviour. So you can be easy to run rrails in many rails project. But you should run rrails clinet under your project's directory.(thanks quark-zju)
+ - MOD: "rails-server" command is obsolate. please use "rrails start" instead. see more about README.md. (thanks quark-zju)
+ - MOD: pry command is removed. please use pry hacks instead. https://gist.github.com/941174 (thanks quark-zju)
+
 v0.4.0				2012-10-15 09:56:00 +0900
 ------------------------------------------------------------------------
  - MOD: pty support. So you can use rails console/server from rrails. (thanks quark-zju)
