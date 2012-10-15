@@ -8,11 +8,6 @@ require 'pty'
 require 'benchmark'
 require 'fileutils'
 
-# make IRB = Pry hacks (https://gist.github.com/941174) work:
-# pre-require all irb compoments needed in rails/commands
-# otherwise 'module IRB' will cause 'IRB is not a module' error.
-require 'irb'
-require 'irb/completion'
 
 # FIXME: rails command require APP_PATH constants.
 APP_PATH = File.expand_path('./config/application')
@@ -35,7 +30,7 @@ module RemoteRails
       @socket     = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
       if (options[:host] || options[:port]) && !options[:socket]
         @socket = nil
-      fi
+      end
       @app_path   = File.expand_path('./config/application')
       @logger     = Logger.new(options[:logfile] ? options[:logfile] : (@background ? nil : STDERR))
     end
@@ -86,7 +81,9 @@ module RemoteRails
         return
       end
 
+      # make 'bundle exec' not necessary for most time.
       require 'bundler/setup'
+
       begin
         [@pidfile, @socket].compact.each do |path|
           FileUtils.rm_f path
@@ -101,7 +98,7 @@ module RemoteRails
                  end
         server.close_on_exec = true
 
-        @logger.info("starting rrails server: #{@socket}")
+        @logger.info("starting rrails server: #{@socket || "#{@host}:#{@port}"}")
 
         [:INT, :TERM].each do |sig|
           trap(sig) do
@@ -150,6 +147,13 @@ module RemoteRails
     def boot_rails
       @logger.info("prepare rails environment (#{@rails_env})")
       ENV["RAILS_ENV"] = @rails_env
+
+      # make IRB = Pry hacks (https://gist.github.com/941174) work:
+      # pre-require all irb compoments needed in rails/commands
+      # otherwise 'module IRB' will cause 'IRB is not a module' error.
+      require 'irb'
+      require 'irb/completion'
+
       require File.expand_path('./config/environment')
 
       unless Rails.application.config.cache_classes

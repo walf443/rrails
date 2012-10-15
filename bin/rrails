@@ -26,11 +26,13 @@ Usage: rrails [options] [-- rails_or_rake_cmds]
 Options:
 !
 opts.on('-E', '--rails_env=s', 'Set Rails env.')      {|v| options[:rails_env] = v}
-opts.on('-s', '--socket=s', 'Set RRails server socket file.') {|v| options[:socket] = v}
-opts.on('-o', '--[no-]ondemand', '(Client) Start RRails server on demand. Default: true.') {|v| options[:ondemand] = v}
+opts.on('-s', '--socket=s', 'Set RRails server socket file. If this is set, host and port are ignored.') {|v| options[:socket] = v}
+opts.on('--host=s', 'Set server hostname. Default: localhost.') {|v| options[:host] = v}
+opts.on('-p', '--port=i', 'Set server port. Default: decided by rails_env.') {|v| options[:port] = v}
+opts.on('--[no-]ondemand', '(Client) Start RRails server on demand. Default: true.') {|v| options[:ondemand] = v}
 opts.on('-t', '--[no-]pty', "(Client) Prepare a PTY. Default: decided by commands.")  {|v| options[:pty] = v }
-opts.on('-l', '--logfile=s', '(Server) Set log file path. Default: (stderr).') {|v| options[:logfile] = v}
-opts.on('-p', '--pidfile=s', '(Server) Set RRails server pidfile file.') {|v| options[:pidfile] = v}
+opts.on('--logfile=s', '(Server) Set log file path. Default: (stderr).') {|v| options[:logfile] = v}
+opts.on('--pidfile=s', '(Server) Set RRails server pidfile file.') {|v| options[:pidfile] = v}
 opts.on('-b', '--[no-]background', '(Server) Run in background.') {|v| options[:background] = v}
 opts.parse!(ARGV)
 

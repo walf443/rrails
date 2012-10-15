@@ -98,15 +98,17 @@ module RemoteRails
       STDERR.puts "\r\nERROR: RRails server disconnected"
       return -1
     end
-  end
 
-  private
+    private
 
-  def connect
-    if @socket
-      UNIXSocket.open(@socket)
-    else
-      TCPSocket.open(@host, @port)
+    def connect
+      if @socket
+        UNIXSocket.open(@socket)
+      else
+        TCPSocket.open(@host, @port)
+      end
     end
+
   end
+
 end
