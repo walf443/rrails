@@ -13,8 +13,8 @@ Without rrails:
 
 With rrails:
 
-    $ source <(rrails shellrc)
-    $ rrails start                         # optionally
+    $ source <(rrails shellrc)             # set aliases for rails and rake
+    $ rrails start                         # start the server, optionally
 
     $ time ( rails generate >/dev/null )
     ( rails generate > /dev/null; )  0.05s user 0.01s system 6% cpu 0.904 total
@@ -28,15 +28,16 @@ With rrails:
 
 ## Usage
 
-Run rails/rake commands using rrails:
+Run rails/rake and other commands using rrails:
 
     $ export RAILS_ENV=development         # optionally
-    $ rrails rails generate model Yakiniku # first command, slow
+    $ rrails rails generate model Yakiniku # first command, server starts on demand, slow
     $ rrails rails server                  # fast
     $ rrails rails console                 # fast
     $ rrails rake db:migrate               # fast
     $ rrails rake routes                   # fast
     $ rrails -- rake -T                    # '--' is needed. Otherwise '-T' will be parsed by rrails
+    $ rrails annotate                      # fast. "gem 'annotate'" should exist in Gemfile
 
 For more options, run:
 
