@@ -70,7 +70,7 @@ module RemoteRails
 
     def start
       # check previous process
-      raise RuntimeError.new('RRails is already running') if alive?
+      raise RuntimeError.new('rrails is already running') if alive?
 
       if @background
         pid = Process.fork do
@@ -267,7 +267,17 @@ module RemoteRails
         $0 = Gem.bin_path('rake')
         ::Rake.application.run
       else
-        STDERR.puts "#{cmd} is not supported in RRails."
+        # unknown binary, try to locate its location
+        bin_path = begin
+                     Gem.bin_path(cmd)
+                   rescue
+                     STDERR.puts "rrails: command not found: #{cmd}"
+                     STDERR.puts "Install missing gem executables with `bundle install`"
+                     exit(127)
+                   end
+
+        # then load it
+        load bin_path
       end
     end
 
