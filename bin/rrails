@@ -13,9 +13,14 @@ def chdir_to_project_root
   end
 end
 
+# default options
+options = {
+  ondemand: true,
+  config: './config/rrails.yml'
+}
+
 # parse options
 require 'optparse'
-options = { ondemand: true }
 opts = OptionParser.new
 opts.banner =<<'!'
 Usage: rrails [options] [-- rails_or_rake_cmds]
@@ -27,14 +32,24 @@ Options:
 !
 opts.on('-h', '--help', 'Show this document.')      {}
 opts.on('-E', '--rails_env=s', 'Set Rails env.')      {|v| options[:rails_env] = v}
+opts.on('-C', '--config=s', "Set config file path. Default: #{options[:config]}") {|v| options[:config] = v}
 opts.on('-s', '--socket=s', 'Set RRails server socket file. If this is set, host and port are ignored.') {|v| options[:socket] = v}
 opts.on('--host=s', 'Set server hostname. Default: localhost.') {|v| options[:host] = v}
 opts.on('-p', '--port=i', 'Set server port. Default: decided by rails_env.') {|v| options[:port] = v}
-opts.on('--[no-]ondemand', '(Client) Start RRails server on demand. Default: true.') {|v| options[:ondemand] = v}
+opts.on('--[no-]ondemand', "(Client) Start RRails server on demand. Default: #{options[:ondemand]}.") {|v| options[:ondemand] = v}
 opts.on('-t', '--[no-]pty', "(Client) Prepare a PTY. Default: decided by commands.")  {|v| options[:pty] = v }
 opts.on('--logfile=s', '(Server) Set log file path. Default: (stderr).') {|v| options[:logfile] = v}
 opts.on('--pidfile=s', '(Server) Set RRails server pidfile file.') {|v| options[:pidfile] = v}
 opts.on('-b', '--[no-]background', '(Server) Run in background.') {|v| options[:background] = v}
+
+# load user config
+config_path = options[:config]
+if File.exists?(config_path)
+  require 'yaml'
+  options.merge!(YAML::load_file(config_path))
+end
+
+# parse options
 opts.parse!(ARGV)
 
 # run client or server
