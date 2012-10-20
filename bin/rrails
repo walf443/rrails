@@ -39,6 +39,7 @@ opts.on('-p', '--port=i', 'Set server port. Default: decided by rails_env.') {|v
 opts.on('--[no-]ondemand', "(Client) Start RRails server on demand. Default: #{options[:ondemand]}.") {|v| options[:ondemand] = v}
 opts.on('-t', '--[no-]pty', "(Client) Prepare a PTY. Default: decided by commands.")  {|v| options[:pty] = v }
 opts.on('--logfile=s', '(Server) Set log file path. Default: (stderr).') {|v| options[:logfile] = v}
+opts.on('--loglevel=i', '(Server) Set log level (0 to 3). Default: 0.') {|v| options[:loglevel] = v}
 opts.on('--pidfile=s', '(Server) Set RRails server pidfile file.') {|v| options[:pidfile] = v}
 opts.on('-b', '--[no-]background', '(Server) Run in background.') {|v| options[:background] = v}
 
