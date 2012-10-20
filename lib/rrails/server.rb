@@ -33,6 +33,7 @@ module RemoteRails
       end
       @app_path   = File.expand_path('./config/application')
       @logger     = Logger.new(options[:logfile] ? options[:logfile] : (@background ? nil : STDERR))
+      @logger.level = options[:loglevel] || 0
     end
 
     def stop
