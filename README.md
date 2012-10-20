@@ -111,6 +111,22 @@ You can control the server using:
     $ rrails reload
     $ rrails status
 
+### Configuration File
+
+`config/rrails.yml` will be auto loaded as default configuration. Here is an example of `rrails.yml`:
+
+    ---
+    development:
+      loglevel: 1
+      logfile: 'log/rrails.development.log'
+      background: true
+      host: '0.0.0.0'
+      port: 5050
+    production:
+      loglevel: 2
+      logfile: 'log/rrails.production.log'
+      ondemand: false
+
 ## See Also
 
 * guard-rrails: https://github.com/walf443/guard-rrails
