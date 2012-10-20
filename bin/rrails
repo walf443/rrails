@@ -15,8 +15,9 @@ end
 
 # default options
 options = {
-  ondemand: true,
-  config: './config/rrails.yml'
+  ondemand:  true,
+  config:    './config/rrails.yml',
+  rails_env: ENV['RAILS_ENV'] || 'development',
 }
 
 # parse options
@@ -42,15 +43,18 @@ opts.on('--logfile=s', '(Server) Set log file path. Default: (stderr).') {|v| op
 opts.on('--loglevel=i', '(Server) Set log level (0 to 3). Default: 0.') {|v| options[:loglevel] = v}
 opts.on('--pidfile=s', '(Server) Set RRails server pidfile file.') {|v| options[:pidfile] = v}
 opts.on('-b', '--[no-]background', '(Server) Run in background.') {|v| options[:background] = v}
+opts.parse!(ARGV)
 
 # load user config
 config_path = options[:config]
 if File.exists?(config_path)
   require 'yaml'
-  options.merge!(Hash[[*YAML::load_file('config/rrails.yml').map {|k, *v| [k.to_sym, *v]}]])
+  config  = YAML::load_file('config/rrails.yml')
+  config  = config[options[:rails_env]] || config
+  options.merge!(Hash[[*config.map {|k, *v| [k.to_sym, *v]}]])
 end
 
-# parse options
+# make sure command line options override others
 opts.parse!(ARGV)
 
 # run client or server
