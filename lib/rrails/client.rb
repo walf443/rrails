@@ -20,9 +20,6 @@ module RemoteRails
 
       @rails_env = options[:rails_env] || ENV['RAILS_ENV'] || 'development'
 
-      @socket = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
-      @host = options[:host] || 'localhost'
-      @port = options[:port] || DEFAULT_PORT[@rails_env]
 
       @use_pty = options[:pty]
       @ondemand_callback = options[:ondemand_callback]
@@ -32,8 +29,12 @@ module RemoteRails
         @cmd = Shellwords.join(@cmd)
       end
 
-      if (options[:host] || options[:port]) && (!options[:socket])
+      if (options[:host] || options[:port]) && !options[:socket]
         @socket = nil
+        @host = options[:host] || 'localhost'
+        @port = options[:port] || DEFAULT_PORT[@rails_env]
+      else
+        @socket = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
       end
 
       if @use_pty.nil?

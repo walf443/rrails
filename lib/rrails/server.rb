@@ -25,11 +25,12 @@ module RemoteRails
       @rails_env  = options[:rails_env] || ENV['RAILS_ENV'] || "development"
       @pidfile    = "#{options[:pidfile] || './tmp/pids/rrails-'}#{@rails_env}.pid"
       @background = options[:background] || false
-      @host       = options[:host] || 'localhost'
-      @port       = options[:port] || DEFAULT_PORT[@rails_env]
-      @socket     = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
       if (options[:host] || options[:port]) && !options[:socket]
-        @socket = nil
+        @socket   = nil
+        @host     = options[:host] || 'localhost'
+        @port     = options[:port] || DEFAULT_PORT[@rails_env]
+      else
+        @socket   = "#{options[:socket] || './tmp/sockets/rrails-'}#{@rails_env}.socket"
       end
       @app_path   = File.expand_path('./config/application')
       @logger     = Logger.new(options[:logfile] ? options[:logfile] : (@background ? nil : STDERR))
