@@ -26,6 +26,14 @@ With rrails:
 * POSIX Environment (Linux 2.6 - , Mac OSX Montain Lion). Windows is not supported.
 * Ruby 1.9.3p194 or above
 
+## Installation
+
+Install from shell:
+
+    gem install rrails
+
+And it's done. No need to add rrails to Gemfile.
+
 ## Usage
 
 Run rails/rake and other commands using rrails:
