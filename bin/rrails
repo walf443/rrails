@@ -47,7 +47,7 @@ opts.on('-b', '--[no-]background', '(Server) Run in background.') {|v| options[:
 config_path = options[:config]
 if File.exists?(config_path)
   require 'yaml'
-  options.merge!(YAML::load_file(config_path))
+  options.merge!(Hash[[*YAML::load_file('config/rrails.yml').map {|k, *v| [k.to_sym, *v]}]])
 end
 
 # parse options
