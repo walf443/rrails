@@ -1,3 +1,8 @@
+v1.0.1				2012-10-21 23:58:00 +0900
+ - FEATURE: config file suport. you can put config file at conf/rrails.yml and auto loaded.(thanks quark-zju)
+ - MOD: support using gem's command. (for example you can use annotate command on rrails.) (thanks quark-zju)
+ - FIX: uninitialized constant warnings when reloading rrails fixed. (thanks quark-zju)
+
 v1.0.0				2012-10-16 01:03:00 +0900
 ------------------------------------------------------------------------
  - XXX: It may have many imcopatible changes. "1.0.0" does not mean "stable version".
