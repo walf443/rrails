@@ -1,4 +1,11 @@
+v1.0.2				2012-11-29 09:17:00 +0900
+------------------------------------------------------------------------
+ - FIX: support using rrails with rspec command.(thanks quark-zju)
+ - FIX: fixed dependency. rrails is dependend on rails 3.2 or above.
+
 v1.0.1				2012-10-21 23:58:00 +0900
+------------------------------------------------------------------------
+ - FEATURE: config file suport. you can put config file at conf/rrails.yml and auto loaded.(thanks quark-zju)
  - FEATURE: config file suport. you can put config file at conf/rrails.yml and auto loaded.(thanks quark-zju)
  - MOD: support using gem's command. (for example you can use annotate command on rrails.) (thanks quark-zju)
  - FIX: uninitialized constant warnings when reloading rrails fixed. (thanks quark-zju)
