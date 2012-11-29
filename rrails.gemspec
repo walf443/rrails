@@ -36,7 +36,7 @@ Gem::Specification.new do |s|
     "test/helper.rb",
     "test/test_rrails.rb"
   ]
-  s.homepage = "http://rubydoc.info/gems/rrails/frames"
+  s.homepage = "http://walf443.github.com/rrails/"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
   s.rubygems_version = "1.8.23"
