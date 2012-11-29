@@ -270,13 +270,22 @@ module RemoteRails
         ::Rake.application.run
       else
         # unknown binary, try to locate its location
-        bin_path = begin
-                     Gem.bin_path(cmd)
-                   rescue
-                     STDERR.puts "rrails: command not found: #{cmd}"
-                     STDERR.puts "Install missing gem executables with `bundle install`"
-                     exit(127)
-                   end
+        # try cmd and "#{cmd}-core" as gem names
+        # rspec is in the gem named 'rspec-core'
+        bin_path = nil
+        [cmd, "#{cmd}-core"].each do |gem|
+          begin
+            bin_path = Gem.bin_path(gem, cmd)
+            break
+          rescue
+          end
+        end
+
+        if not bin_path
+          STDERR.puts "rrails: command not found: #{cmd}"
+          STDERR.puts "Install missing gem executables with `bundle install`"
+          exit(127)
+        end
 
         # then load it
         load bin_path
