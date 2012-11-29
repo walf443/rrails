@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = "rrails"
-  s.version = "1.1.0"
+  s.version = "1.2.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Keiji, Yoshimi"]
-  s.date = "2012-10-21"
+  s.date = "2012-11-29"
   s.description = "remote run rails/rake command"
   s.email = "walf443@gmail.com"
   s.executables = ["rrails", "rrails-server"]
@@ -36,7 +36,7 @@ Gem::Specification.new do |s|
     "test/helper.rb",
     "test/test_rrails.rb"
   ]
-  s.homepage = "http://walf443.github.com/rrails/"
+  s.homepage = "http://rubydoc.info/gems/rrails/frames"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
   s.rubygems_version = "1.8.23"
@@ -46,12 +46,14 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
+      s.add_runtime_dependency(%q<rails>, [">= 3.2"])
       s.add_development_dependency(%q<shoulda>, [">= 0"])
       s.add_development_dependency(%q<rdoc>, ["~> 3.12"])
       s.add_development_dependency(%q<bundler>, [">= 0"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_development_dependency(%q<simplecov>, [">= 0"])
     else
+      s.add_dependency(%q<rails>, [">= 3.2"])
       s.add_dependency(%q<shoulda>, [">= 0"])
       s.add_dependency(%q<rdoc>, ["~> 3.12"])
       s.add_dependency(%q<bundler>, [">= 0"])
@@ -59,6 +61,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<simplecov>, [">= 0"])
     end
   else
+    s.add_dependency(%q<rails>, [">= 3.2"])
     s.add_dependency(%q<shoulda>, [">= 0"])
     s.add_dependency(%q<rdoc>, ["~> 3.12"])
     s.add_dependency(%q<bundler>, [">= 0"])
